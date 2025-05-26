@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Report mensile: Elabotazione file excel</title>
+  <title>Report mensile: Elaborazione file Excel</title>
   <link rel="icon" href="favicon.ico" type="image/png" />
   <style>
     :root { --primary: #00529F; --secondary: #FFD700; --bg: #f9f9f9; --text: #333; --card-bg: #fff; }
@@ -47,7 +47,7 @@
         workbookEmplifi = XLSX.read(new Uint8Array(ev.target.result), { 
           type: 'array',
           cellDates: true,
-          dateNF: 'dd/mm/yy'
+          dateNF: 'dd/mm/yyyy'
         });
       };
       reader.readAsArrayBuffer(f);
@@ -74,7 +74,7 @@
           formattedDate = [
             String(dateCell.getDate()).padStart(2, '0'),
             String(dateCell.getMonth() + 1).padStart(2, '0'),
-            dateCell.getFullYear().toString().slice(-2)
+            dateCell.getFullYear().toString()
           ].join('/');
           formattedMonth = formattedDate;
         } else if (typeof dateCell === 'number') {
@@ -83,7 +83,7 @@
           formattedDate = [
             String(jsDate.getDate()).padStart(2, '0'),
             String(jsDate.getMonth() + 1).padStart(2, '0'),
-            String(jsDate.getFullYear()).slice(-2)
+            jsDate.getFullYear().toString()
           ].join('/');
           formattedMonth = formattedDate;
         } else {
@@ -131,7 +131,7 @@
       XLSX.utils.book_append_sheet(newWb, newWs, "Report");
 
       // Applica formattazione date
-      const dateStyle = 'dd/mm/yy';
+      const dateStyle = 'dd/mm/yyyy';
       const dataColIndex = Object.keys(out[0]).indexOf('Data');
       const meseColIndex = Object.keys(out[0]).indexOf('Mese');
 
@@ -149,9 +149,10 @@
         bookType: 'xlsx',
         type: 'array',
         cellStyles: true,
-        dateNF: 'dd/mm/yy'
+        dateNF: 'dd/mm/yyyy'
       });
     });
   </script>
 </body>
 </html>
+
