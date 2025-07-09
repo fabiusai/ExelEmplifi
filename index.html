@@ -197,6 +197,14 @@
         if (finalRow.Argomento && argomentoIstituzionaleMap.hasOwnProperty(finalRow.Argomento)) {
           finalRow.Istituzionale = argomentoIstituzionaleMap[finalRow.Argomento] ? 1 : '';
         }
+
+        // --- INIZIO MODIFICA RICHIESTA ---
+        // Se il campo 'Copy' è vuoto (o nullo), lo popola con il valore del campo 'Argomento'.
+        if (!finalRow.Copy && finalRow.Argomento) {
+            finalRow.Copy = finalRow.Argomento;
+        }
+        // --- FINE MODIFICA RICHIESTA ---
+        
         return finalRow;
       });
 
@@ -239,4 +247,3 @@
   </script>
 </body>
 </html>
-
