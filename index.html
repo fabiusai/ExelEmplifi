@@ -100,7 +100,14 @@
         }
         yearSelect.value = currentYear;
     }
-    document.addEventListener('DOMContentLoaded', populateYearSelector);
+    
+    // --- MODIFICA 1: Imposta mese e anno correnti al caricamento ---
+    document.addEventListener('DOMContentLoaded', () => {
+        populateYearSelector();
+        // Imposta il mese corrente come predefinito
+        const currentMonth = new Date().getMonth() + 1; // getMonth() è 0-11, quindi +1
+        monthSelect.value = String(currentMonth).padStart(2, '0'); // Formatta a "01", "02", ecc.
+    });
 
     fileInput.addEventListener('change', e => {
       const f = e.target.files[0];
@@ -148,10 +155,16 @@
         const hasKeywords = /lasco|del fante|rovere/i.test((r['Content'] || '').toLowerCase());
         const isIstituzionalePreliminary = (hasKeywords || hasIstLabel) ? 1 : '';
 
+        // --- MODIFICA 2: Nuova logica per la colonna "Canale" ---
+        const platformRaw = r['Platform'] || '';
+        const platform = platformRaw ? platformRaw.charAt(0).toUpperCase() + platformRaw.slice(1).toLowerCase() : '';
+        const authorName = (r['Author name'] || '').trim();
+        const canaleValue = (authorName && authorName !== 'Poste Italiane') ? `${platform} ${authorName}` : platform;
+        
         return {
           Link: r['View on platform'] || r['Content type'] || '', 'Dettagli Emplifi': r['Post detail URL'] || '',
           Mese: meseDelReport, Data: formattedDate,
-          Canale: ((r['Platform'] || '').toLowerCase() === 'youtube' ? 'Youtube' : r['Platform'] || '') + ((r['Author name'] || '').trim() && r['Author name'] !== 'Poste Italiane' ? ' ' + r['author name'] : ''),
+          Canale: canaleValue,
           Interazioni: r['Total interactions'] || r['Taps forward'] || '', Visualizzazioni: r['Total impressions'] || r['Video view count'] || '',
           'Persone raggiunte': Number(r['Total reach']) > 0 ? r['Total reach'] : '', Click: Number(r['Post clicks']) > 0 ? r['Post clicks'] : '',
           'Like e reazioni': Number(r['Total reactions']) > 0 ? r['Total reactions'] : '', Condivisioni: Number(r['Total shares']) > 0 ? r['Total shares'] : '',
@@ -198,12 +211,10 @@
           finalRow.Istituzionale = argomentoIstituzionaleMap[finalRow.Argomento] ? 1 : '';
         }
 
-        // --- INIZIO MODIFICA RICHIESTA ---
         // Se il campo 'Copy' è vuoto (o nullo), lo popola con il valore del campo 'Argomento'.
         if (!finalRow.Copy && finalRow.Argomento) {
             finalRow.Copy = finalRow.Argomento;
         }
-        // --- FINE MODIFICA RICHIESTA ---
         
         return finalRow;
       });
@@ -211,7 +222,6 @@
       // Crea il foglio di lavoro con tutti i dati come testo/numeri
       const newWs = XLSX.utils.json_to_sheet(finalOutput);
       
-      // --- NUOVA LOGICA: Manipolazione manuale delle celle per un controllo preciso ---
       const header = Object.keys(finalOutput[0]);
       const meseColIndex = header.indexOf('Mese');
       const dataColIndex = header.indexOf('Data');
