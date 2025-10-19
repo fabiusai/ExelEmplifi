@@ -101,12 +101,10 @@
         yearSelect.value = currentYear;
     }
     
-    // --- MODIFICA 1: Imposta mese e anno correnti al caricamento ---
     document.addEventListener('DOMContentLoaded', () => {
         populateYearSelector();
-        // Imposta il mese corrente come predefinito
-        const currentMonth = new Date().getMonth() + 1; // getMonth() è 0-11, quindi +1
-        monthSelect.value = String(currentMonth).padStart(2, '0'); // Formatta a "01", "02", ecc.
+        const currentMonth = new Date().getMonth() + 1;
+        monthSelect.value = String(currentMonth).padStart(2, '0');
     });
 
     fileInput.addEventListener('change', e => {
@@ -155,7 +153,6 @@
         const hasKeywords = /lasco|del fante|rovere/i.test((r['Content'] || '').toLowerCase());
         const isIstituzionalePreliminary = (hasKeywords || hasIstLabel) ? 1 : '';
 
-        // --- MODIFICA 2: Nuova logica per la colonna "Canale" ---
         const platformRaw = r['Platform'] || '';
         const platform = platformRaw ? platformRaw.charAt(0).toUpperCase() + platformRaw.slice(1).toLowerCase() : '';
         const authorName = (r['Author name'] || '').trim();
@@ -169,7 +166,9 @@
           'Persone raggiunte': Number(r['Total reach']) > 0 ? r['Total reach'] : '', Click: Number(r['Post clicks']) > 0 ? r['Post clicks'] : '',
           'Like e reazioni': Number(r['Total reactions']) > 0 ? r['Total reactions'] : '', Condivisioni: Number(r['Total shares']) > 0 ? r['Total shares'] : '',
           Commenti: Number(r['Total comments']) > 0 ? r['Total comments'] : '', Campagna: Number(r['Paid impression']) > 0 ? 'Campagna' : 'Editoriale',
-          Label: labelValue, Argomento: argomentoValue, Copy: r['Content'] || '', Istituzionale: isIstituzionalePreliminary
+          Label: labelValue, Argomento: argomentoValue, Copy: r['Content'] || '', Istituzionale: isIstituzionalePreliminary,
+          // MODIFICA: Aggiunto campo per mantenere i label originali per la logica di Whatsapp
+          OriginalLabels: r['Labels'] || ''
         };
       });
 
@@ -205,13 +204,12 @@
     generateBtn.addEventListener('click', () => {
       if (processedData.length === 0) return alert("Nessun dato da elaborare. Clicca prima su 'Analizza dati'.");
       
-      const finalOutput = processedData.map(row => {
+      const initialOutput = processedData.map(row => {
         const finalRow = { ...row };
         if (finalRow.Argomento && argomentoIstituzionaleMap.hasOwnProperty(finalRow.Argomento)) {
           finalRow.Istituzionale = argomentoIstituzionaleMap[finalRow.Argomento] ? 1 : '';
         }
 
-        // Se il campo 'Copy' è vuoto (o nullo), lo popola con il valore del campo 'Argomento'.
         if (!finalRow.Copy && finalRow.Argomento) {
             finalRow.Copy = finalRow.Argomento;
         }
@@ -219,33 +217,72 @@
         return finalRow;
       });
 
-      // Crea il foglio di lavoro con tutti i dati come testo/numeri
+      // --- MODIFICA: INIZIO NUOVA LOGICA PER WHATSAPP ---
+      const finalOutput = [];
+      if (initialOutput.length > 0) {
+          const allHeaders = Object.keys(initialOutput[0]);
+
+          initialOutput.forEach(row => {
+              // Aggiunge sempre la riga originale all'output
+              finalOutput.push(row);
+
+              // Controlla la condizione per creare la riga aggiuntiva di Whatsapp
+              const isYouTube = (row.Canale || '').trim() === 'Youtube';
+              const hasWhaTag = (row.OriginalLabels || '').includes('#WHA');
+              
+              if (isYouTube && hasWhaTag) {
+                  // Crea un oggetto vuoto per la nuova riga
+                  const newWhatsappRow = {};
+                  allHeaders.forEach(header => { newWhatsappRow[header] = ''; });
+
+                  // Popola solo i campi specifici richiesti per la nuova riga
+                  newWhatsappRow.Canale = 'Whatsapp';
+                  newWhatsappRow.Link = 'Post Whatsapp';
+                  newWhatsappRow.Mese = row.Mese;
+                  newWhatsappRow.Data = row.Data;
+                  newWhatsappRow.Campagna = row.Campagna;
+                  newWhatsappRow.Label = row.Label; // Usa il label processato come da logica esistente
+                  newWhatsappRow.Argomento = row.Argomento;
+                  newWhatsappRow.Copy = row.Copy;
+                  newWhatsappRow.Istituzionale = row.Istituzionale;
+                  
+                  // Aggiunge la nuova riga di Whatsapp all'output
+                  finalOutput.push(newWhatsappRow);
+              }
+          });
+      }
+      // --- MODIFICA: FINE LOGICA WHATSAPP ---
+      
+      if (finalOutput.length === 0) {
+        return alert('Nessun dato finale da esportare.');
+      }
+
+      // Rimuove la colonna di supporto 'OriginalLabels' prima dell'esportazione finale
+      finalOutput.forEach(row => delete row.OriginalLabels);
+
       const newWs = XLSX.utils.json_to_sheet(finalOutput);
       
       const header = Object.keys(finalOutput[0]);
       const meseColIndex = header.indexOf('Mese');
       const dataColIndex = header.indexOf('Data');
 
-      // Itera su tutte le righe di dati (saltando l'intestazione, R=0)
       for (let R = 1; R <= finalOutput.length; R++) {
-        // Gestisci la colonna "Mese" per formattarla come data
         if (meseColIndex !== -1) {
           const cellAddress = XLSX.utils.encode_cell({ r: R, c: meseColIndex });
           const cell = newWs[cellAddress];
-          if (cell && cell.v) { // Se la cella esiste e ha un valore
+          if (cell && cell.v) {
             const [day, month, year] = cell.v.split('/');
-            cell.t = 'd'; // Imposta il tipo a 'd' (date)
-            cell.v = new Date(year, month - 1, day); // Imposta il valore come oggetto Date
-            cell.z = 'dd/mm/yyyy'; // Imposta il formato di visualizzazione
+            cell.t = 'd';
+            cell.v = new Date(year, month - 1, day);
+            cell.z = 'dd/mm/yyyy';
           }
         }
         
-        // Assicurati che la colonna "Data" sia trattata come testo
         if (dataColIndex !== -1) {
           const cellAddress = XLSX.utils.encode_cell({ r: R, c: dataColIndex });
           const cell = newWs[cellAddress];
           if (cell) {
-             cell.t = 's'; // Imposta il tipo a 's' (string/text)
+             cell.t = 's';
           }
         }
       }
