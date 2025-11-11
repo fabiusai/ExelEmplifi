@@ -190,12 +190,6 @@
             yearSelect.value = currentYear;
         }
         
-        document.addEventListener('DOMContentLoaded', () => {
-            populateYearSelector();
-            const currentMonth = new Date().getMonth() + 1;
-            monthSelect.value = String(currentMonth).padStart(2, '0');
-        });
-        
         populateYearSelector(); // Chiamata diretta
         const currentMonth = new Date().getMonth() + 1;
         monthSelect.value = String(currentMonth).padStart(2, '0');
@@ -522,7 +516,19 @@
                     // Creazione file da App 1
                     const newWb = XLSX.utils.book_new();
                     XLSX.utils.book_append_sheet(newWb, newWs, "Report Elaborato");
-                    XLSX.writeFile(newWb, 'report_elaborato.xlsx');
+                    
+                    // --- MODIFICA PER NOME FILE DINAMICO ---
+                    const now = new Date();
+                    const year = now.getFullYear();
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const day = String(now.getDate()).padStart(2, '0');
+                    const hours = String(now.getHours()).padStart(2, '0');
+                    const minutes = String(now.getMinutes()).padStart(2, '0');
+                    const timestamp = `${year}_${month}_${day}_${hours}_${minutes}`;
+                    const fileName = `report_elaborato_${timestamp}.xlsx`;
+                    
+                    XLSX.writeFile(newWb, fileName);
+                    // --- FINE MODIFICA ---
 
                     // --- FINE LOGICA INIETTATA DA APP 1 ---
                     
@@ -530,7 +536,7 @@
                     setTimeout(() => { exportButton.innerHTML = btnOriginalText; exportButton.disabled = false; }, 2000);
                 } catch (err) {
                     console.error("Errore durante l'esportazione:", err);
-                    alert("Si è verificato un errore durante la creazione del file Excel.");
+                    alert("Si è verificato un errore during la creazione del file Excel.");
                     exportButton.innerHTML = btnOriginalText;
                     exportButton.disabled = false;
                 }
