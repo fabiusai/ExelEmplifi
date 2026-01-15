@@ -1,121 +1,136 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editor Report Social</title>
-    <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editor Report Social</title>
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+  <style>
+    /* --- CSS DESIGN SYSTEM (Copiato e adattato da Analisi_social) --- */
+    @font-face {
+        font-family: 'Avenir Next LT Pro';
+        src: url('https://cdn.jsdelivr.net/gh/hung1001/font-awesome-pro@4cac1a6/fonts/AvenirNextLTPro-Regular.woff2') format('woff2');
+        font-weight: normal;
+    }
+
+    :root {
+      --primary: #00529F;
+      --primary-hover: #003e7e;
+      --bg: #f4f6f8;
+      --text: #2c3e50;
+      --text-light: #607d8b;
+      --card-bg: #fff;
+      --border-radius: 12px;
+      --shadow: 0 4px 12px rgba(0,0,0,0.05);
+      
+      --inst-yellow: #ffcc00;
+      --inst-blue: #1b47b4;
+      --error-color: #e74c3c;
+      --border-color: #e2e8f0;
+    }
     
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    body { margin: 0; font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.5; }
     
-    <style>
-        :root {
-            --primary-color: #ffc72c;
-            --secondary-color: #003366;
-            --background-color: #f4f7f9;
-            --text-color: #333333;
-            --light-grey: #e9ecef;
-            --border-color: #dee2e6;
-            --card-bg: #ffffff;
-            --error-color: #dc3545;
-            --font-family: 'Open Sans', sans-serif;
-            --border-radius: 8px;
-            --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: var(--font-family); background-color: var(--background-color); color: var(--text-color); line-height: 1.6; font-size: 16px; }
-        .app-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        header { background-color: var(--secondary-color); color: white; padding: 20px 30px; border-radius: var(--border-radius); margin-bottom: 30px; box-shadow: var(--box-shadow); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;}
-        header h1 { font-size: 1.8rem; font-weight: 700; color: var(--primary-color); }
-        header p { font-size: 1rem; opacity: 0.9; }
-        main { display: flex; flex-direction: column; gap: 30px; }
-        
-        /* Stili per le card (da app2) */
-        .section-card { background: var(--card-bg); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 25px 30px; }
-        .section-card h2 { font-size: 1.5rem; margin-bottom: 20px; color: var(--secondary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; }
-        
-        /* Stili per la Fase 1 (da app1) */
-        .controls { display:flex; align-items:center; gap:1rem; margin-top:1rem; flex-wrap: wrap; }
-        .input-group { display: flex; flex-direction: column; gap: 0.5rem; }
-        select, input[type="file"] { padding: 0.4rem; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; font-size: 0.95rem; }
-        #analyze-data { 
-            cursor:pointer; 
-            background: #FFD700; /* Giallo da app1 */ 
-            color: #333; /* Testo scuro per leggibilità */ 
-            border:none; 
-            padding:0.6rem 1.2rem; 
-            font-weight:bold; 
-            border-radius:4px; 
-            box-shadow:0 1px 3px rgba(0,0,0,0.1); 
-            transition: background-color 0.2s; 
-            align-self: flex-end; 
-            font-size: 0.95rem;
-        }
-        #analyze-data:hover { background-color: #e6c300; }
-        #analyze-data:disabled { background-color: #ccc; cursor: not-allowed; }
+    /* Header & Layout */
+    header { background: var(--primary); color: #fff; padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+    header h1 { margin: 0; font-size: 1.4rem; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+    .header-desc { font-size: 0.9rem; opacity: 0.8; font-weight: 300; margin-left: 10px; }
+    .container { max-width: 1200px; margin: 2rem auto; padding: 0 1.5rem; }
+    
+    /* Cards */
+    .card { background: var(--card-bg); padding: 1.5rem; margin-bottom: 1.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow); border: 1px solid #e1e4e8; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f0f0; padding-bottom: 0.8rem; margin-bottom: 1.5rem; }
+    .card h2 { margin: 0; color: var(--primary); font-size: 1.2rem; display: flex; align-items: center; gap: 10px; }
+    
+    /* Upload Area */
+    .upload-area { background: var(--card-bg); border: 3px dashed #cbd5e0; border-radius: var(--border-radius); padding: 2rem; text-align: center; margin-bottom: 1.5rem; cursor: pointer; transition: all 0.2s; position: relative; }
+    .upload-area:hover { border-color: var(--primary); background: #f0f7ff; }
+    .upload-area input { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+    .upload-text { font-size: 1.1rem; color: var(--text-light); font-weight: 500; }
+    .upload-icon { font-size: 2.5rem; color: var(--primary); margin-bottom: 0.5rem; display: block; }
 
-        /* Stili per Conflitti ed Editor (da app2) */
-        #conflict-container { border-left: 5px solid var(--error-color); }
-        .conflict-item { background-color: #fff8f8; padding: 15px; margin-bottom: 10px; border: 1px solid var(--error-color); border-radius: 4px; }
-        .conflict-item p { margin-bottom: 10px; }
-        .conflict-item .resolve-buttons button { margin-right: 10px; background-color: var(--secondary-color); color: white; }
-        #editor-container { display: flex; flex-direction: column; gap: 20px; }
-        .label-group { background: #fdfdfd; border: 1px solid var(--border-color); border-radius: var(--border-radius); min-height: 100px; }
-        .label-header { background-color: var(--light-grey); color: var(--secondary-color); padding: 12px 20px; font-weight: 700; font-size: 1.2rem; border-top-left-radius: var(--border-radius); border-top-right-radius: var(--border-radius); border-bottom: 1px solid var(--border-color); }
-        .argument-list { padding: 10px; list-style-type: none; }
-        .argument-item { display: flex; align-items: center; padding: 12px 10px; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 8px; gap: 15px; transition: box-shadow 0.2s; flex-wrap: nowrap; }
-        .argument-item:hover { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
-        .drag-handle { cursor: move; color: #adb5bd; }
-        .argument-text { flex-grow: 1; border: none; border-bottom: 1px solid transparent; padding: 5px; font-size: 1rem; font-family: inherit; transition: border-color 0.3s; min-width: 200px;}
-        .argument-text:focus { outline: none; border-bottom: 1px solid var(--secondary-color); }
-        .institutional-check { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
-        .institutional-check input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--secondary-color); cursor: pointer; }
-        .argument-link a { color: var(--secondary-color); text-decoration: none; font-size: 1.2rem; transition: color 0.2s; }
-        .argument-link a:hover { color: var(--primary-color); }
-        .sortable-ghost { opacity: 0.4; background-color: #cce5ff; border: 1px dashed var(--secondary-color); }
-        
-        /* Stili per bottoni (da app2) */
-        .button { background-color: var(--primary-color); color: var(--secondary-color); border: 2px solid var(--secondary-color); padding: 12px 25px; font-size: 1rem; font-weight: 700; border-radius: var(--border-radius); cursor: pointer; transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 8px; }
-        .button:hover:not(:disabled) { background-color: var(--secondary-color); color: var(--primary-color); }
-        .button:disabled { background-color: #adb5bd; border-color: #6c757d; color: white; cursor: not-allowed; }
-        #export-button-container { text-align: right; margin-top: 20px; }
-        .hidden { display: none !important; }
-        
-        @media (max-width: 768px) {
-            header { flex-direction: column; text-align: center; }
-            #export-button-container { text-align: center; }
-            .argument-item { flex-wrap: wrap; }
-        }
-    </style>
+    /* Inputs & Selects Controls */
+    .controls-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; align-items: end; }
+    .input-group { display: flex; flex-direction: column; gap: 0.5rem; }
+    .input-group label { font-weight: 600; color: var(--text); font-size: 0.9rem; }
+    select, input[type="text"] { padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; font-family: inherit; width: 100%; background: #fff; transition: border 0.2s; }
+    select:focus, input:focus { border-color: var(--primary); outline: none; }
+
+    /* Buttons */
+    .action-btn { background-color: #fff; border: 1px solid #d1d5db; color: #4b5563; padding: 8px 16px; border-radius: 6px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+    .action-btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); background: #f8fafc; }
+    .action-btn.excel { color: #166534; border-color: #86efac; background: #f0fdf4; }
+    .action-btn.excel:hover:not(:disabled) { background: #dcfce7; }
+    .action-btn.blue-fill { background-color: var(--primary); color: white; border: none; }
+    .action-btn.blue-fill:hover:not(:disabled) { background-color: var(--primary-hover); }
+    .action-btn:disabled { background-color: #e5e7eb; color: #9ca3af; border-color: #e5e7eb; cursor: not-allowed; }
+
+    /* Conflict Section */
+    #conflict-container { border-left: 5px solid var(--error-color); background: #fff5f5; }
+    .conflict-item { background-color: #fff; padding: 15px; margin-bottom: 10px; border: 1px solid #fed7d7; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+    .conflict-item p { margin-bottom: 10px; font-weight: 500; }
+    .resolve-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    /* Editor Section */
+    .editor-wrapper { display: flex; flex-direction: column; gap: 20px; }
+    .label-group { background: #fff; border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
+    .label-header { background-color: #f1f5f9; color: var(--primary); padding: 12px 20px; font-weight: 700; font-size: 1.05rem; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; }
+    .argument-list { padding: 10px; list-style-type: none; margin: 0; background: #fafafa; }
+    
+    /* Argument Item Styled like PED Rows */
+    .argument-item { display: flex; align-items: center; padding: 10px 15px; background-color: #fff; border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 8px; gap: 15px; transition: all 0.2s; }
+    .argument-item:hover { border-color: var(--primary); transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .drag-handle { cursor: grab; color: #94a3b8; padding: 4px; }
+    .drag-handle:active { cursor: grabbing; color: var(--primary); }
+    .argument-text { flex-grow: 1; border: 1px solid transparent; border-bottom-color: #e2e8f0; padding: 6px; font-size: 0.95rem; color: #334155; font-weight: 500; }
+    .argument-text:focus { border-color: var(--primary); border-radius: 4px; }
+    
+    .institutional-check { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #64748b; background: #f8fafc; padding: 4px 8px; border-radius: 4px; border: 1px solid #e2e8f0; }
+    .institutional-check input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
+    .argument-link a { color: var(--text-light); transition: color 0.2s; font-size: 1rem; }
+    .argument-link a:hover { color: var(--primary); }
+    
+    .sortable-ghost { opacity: 0.4; background-color: #e2e8f0; border: 2px dashed #94a3b8; }
+    
+    .hidden { display: none !important; }
+    
+    /* Utilities */
+    .text-center { text-align: center; }
+    .mt-4 { margin-top: 1.5rem; }
+    
+  </style>
 </head>
 <body>
-    <div class="app-container">
-        <header>
-            <div>
-                <h1>Editor Report Social</h1>
-                <p>Carica, elabora e organizza i tuoi contenuti in modo efficiente.</p>
-            </div>
-        </header>
 
-        <main>
-            <section class="section-card">
-              <h2>1. Carica file e scegli il mese</h2>
-              <p>Seleziona il file Excel da Emplifi e specifica il mese di riferimento per il report.</p>
-              <div class="controls">
-                <div class="input-group">
-                  <label for="file-input-emplifi">Carica file Excel:</label>
-                  <input type="file" id="file-input-emplifi" accept=".xlsx,.xls" />
-                </div>
-                <div class="input-group">
-                  <label for="month-select">Mese del report:</label>
-                  <select id="month-select">
+  <header>
+    <h1><i class="fas fa-edit"></i> Editor Report Social <span class="header-desc">Strumento di elaborazione Excel</span></h1>
+  </header>
+
+  <div class="container">
+    
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="fas fa-cloud-upload-alt"></i> 1. Caricamento e Configurazione</h2>
+        </div>
+        
+        <div class="upload-area">
+            <input type="file" id="file-input-emplifi" accept=".xlsx,.xls" />
+            <span class="upload-icon"><i class="fas fa-file-excel"></i></span>
+            <div class="upload-text">Trascina qui il file Excel di Emplifi o clicca per caricare</div>
+        </div>
+
+        <div class="controls-grid">
+            <div class="input-group">
+                <label for="month-select">Mese di Riferimento</label>
+                <select id="month-select">
                     <option value="01">Gennaio</option>
                     <option value="02">Febbraio</option>
                     <option value="03">Marzo</option>
@@ -128,35 +143,53 @@
                     <option value="10">Ottobre</option>
                     <option value="11">Novembre</option>
                     <option value="12">Dicembre</option>
-                  </select>
-                </div>
-                <div class="input-group">
-                    <label for="year-select">Anno del report:</label>
-                    <select id="year-select"></select>
-                </div>
-                <button id="analyze-data" style="align-self: flex-end;">Analizza dati</button>
-              </div>
-            </section>
-            
-            <section id="conflict-container" class="section-card hidden">
-                <h2>2. Conflitti Rilevati</h2>
-                <p>Sono stati trovati argomenti duplicati in diverse "Label". Per favore, risolvi i conflitti per continuare.</p>
-                <div id="conflict-list"></div>
-            </section>
-
-            <section id="editor-section" class="section-card hidden">
-                <h2>3. Organizza e Modifica Argomenti</h2>
-                <div id="editor-container"></div>
-                <div id="export-button-container">
-                    <button id="export-button" class="button" disabled>
-                        <i class="fa-solid fa-file-excel"></i> Esporta Excel Aggiornato
-                    </button>
-                </div>
-            </section>
-        </main>
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="year-select">Anno</label>
+                <select id="year-select"></select>
+            </div>
+            <div>
+                <button id="analyze-data" class="action-btn blue-fill" style="width: 100%; height: 42px;">
+                    <i class="fas fa-bolt"></i> Analizza Dati
+                </button>
+            </div>
+        </div>
     </div>
 
-    <script>
+    <div id="conflict-container" class="card hidden">
+        <div class="card-header" style="border-bottom-color: #fed7d7;">
+            <h2 style="color: var(--error-color);"><i class="fas fa-exclamation-triangle"></i> 2. Conflitti Rilevati</h2>
+        </div>
+        <p style="margin-bottom: 1rem; color: #c0392b;">Sono stati trovati argomenti identici associati a Label diverse. Risolvi i conflitti per procedere.</p>
+        <div id="conflict-list"></div>
+    </div>
+
+    <div id="editor-section" class="card hidden">
+        <div class="card-header">
+            <h2><i class="fas fa-layer-group"></i> 3. Organizza e Modifica</h2>
+            <button id="export-button" class="action-btn excel" disabled>
+                <i class="fas fa-file-export"></i> Esporta Excel Aggiornato
+            </button>
+        </div>
+        
+        <div class="bg-blue-50 p-3 rounded mb-4 text-sm text-gray-600 flex items-center gap-2 border border-blue-100">
+            <i class="fas fa-info-circle text-blue-600"></i>
+            <span>Trascina gli argomenti tra le label per riorganizzarli. Modifica il testo o spunta "Istituzionale" se necessario.</span>
+        </div>
+
+        <div id="editor-container" class="editor-wrapper"></div>
+        
+        <div class="mt-4 text-center">
+             <button onclick="document.getElementById('export-button').click()" class="action-btn excel" style="padding: 12px 24px; font-size: 1rem;">
+                <i class="fas fa-file-export"></i> Conferma ed Esporta Excel
+            </button>
+        </div>
+    </div>
+
+  </div>
+
+  <script>
     document.addEventListener('DOMContentLoaded', function () {
 
         // --- Variabili globali da entrambe le app ---
@@ -178,6 +211,9 @@
         const editorContainer = document.getElementById('editor-container');
         const exportButton = document.getElementById('export-button');
 
+        // UI Helpers
+        const uploadText = document.querySelector('.upload-text');
+
         // --- Funzioni da App 1 (Fase 1) ---
         function populateYearSelector() {
             const currentYear = new Date().getFullYear();
@@ -190,13 +226,16 @@
             yearSelect.value = currentYear;
         }
         
-        populateYearSelector(); // Chiamata diretta
+        populateYearSelector();
         const currentMonth = new Date().getMonth() + 1;
         monthSelect.value = String(currentMonth).padStart(2, '0');
 
         fileInputEmplifi.addEventListener('change', e => {
           const f = e.target.files[0];
           if (!f) { workbookEmplifi = null; return; }
+          
+          uploadText.innerHTML = `<strong>${f.name}</strong> pronto per l'analisi.`;
+          
           const reader = new FileReader();
           reader.onload = ev => { workbookEmplifi = XLSX.read(new Uint8Array(ev.target.result), { type: 'array' }); };
           reader.readAsArrayBuffer(f);
@@ -207,11 +246,10 @@
           originalData = [];
         });
 
-        // Listener "Analizza Dati" (Il "Ponte" tra App1 e App2)
+        // Listener "Analizza Dati"
         analyzeBtn.addEventListener('click', () => {
-          if (!workbookEmplifi) return alert('Seleziona prima un file Emplifi.');
+          if (!workbookEmplifi) return alert('Seleziona prima un file Excel.');
           
-          // Resetta l'interfaccia in caso di ri-analisi
           resetUI();
           
           const ws = workbookEmplifi.Sheets[workbookEmplifi.SheetNames[0]];
@@ -219,14 +257,13 @@
 
           if (!data.length) return alert('File vuoto o illeggibile.');
 
-          // Rileva se il file è un RAW Emplifi o un file GIÀ ELABORATO (controllando intestazioni tipiche)
+          // Rileva se il file è un RAW Emplifi o un file GIÀ ELABORATO
           const isProcessedFile = data[0] && ('Argomento' in data[0] || 'Canale' in data[0]);
 
           if (isProcessedFile) {
             // --- LOGICA IMPORTAZIONE FILE GIÀ ELABORATO ---
             processedData = data.map(r => {
                 let formattedDate = r['Data'] || '';
-                // Gestione data nel caso Excel la legga come numero seriale
                 if (typeof r['Data'] === 'number') {
                     const parsedDate = XLSX.SSF.parse_date_code(r['Data']);
                     const jsDate = new Date(parsedDate.y, parsedDate.m - 1, parsedDate.d);
@@ -243,7 +280,7 @@
                     Commenti: r['Commenti'] || '', Campagna: r['Campagna'] || '',
                     Label: r['Label'] || '', Argomento: r['Argomento'] || '', Copy: r['Copy'] || '',
                     Istituzionale: r['Istituzionale'] || '',
-                    OriginalLabels: '' // Non disponibile/necessario nel ri-edit
+                    OriginalLabels: ''
                 };
             });
 
@@ -270,12 +307,11 @@
                 }
                 
                 const allLabels = (r['Labels'] || '').split(';').map(s => s.trim());
-                const hasIstLabel = allLabels.includes('#IST');
                 const labelsForProcessing = allLabels.filter(l => l !== '#IST');
                 const labelValue = labelsForProcessing.filter(l => l.startsWith('#')).map(l => ({'#PES':'Prodotti e servizi', '#TER':'Territorio', '#ISR':'Investor e stakeholder relations', '#FIL':'Filatelia', '#EB':'Employer branding', '#P160':'Poste 160', '#NED':'News editoriali', '#CET':'CSR e trasparenza', '#DEI':'Digital e Innovazione', '#ST':'Storici', '#RIC':'Ricorrenze'}[l] || l))[0] || '';
                 const argomentoValue = labelsForProcessing.filter(l => !l.startsWith('#'))[0] || '';
                 const hasKeywords = /lasco|del fante|rovere/i.test((r['Content'] || '').toLowerCase());
-                const isIstituzionalePreliminary = (hasKeywords || hasIstLabel) ? 1 : '';
+                const isIstituzionalePreliminary = (hasKeywords || allLabels.includes('#IST')) ? 1 : '';
 
                 const platformRaw = r['Platform'] || '';
                 const platform = platformRaw ? platformRaw.charAt(0).toUpperCase() + platformRaw.slice(1).toLowerCase() : '';
@@ -296,10 +332,7 @@
             });
           }
 
-          // --- "IL PONTE" ---
-          // Passa i dati elaborati da App1 alla logica di App2
           originalData = processedData;
-          // Avvia la logica di App2 (controllo conflitti e rendering editor)
           processData(); 
         });
 
@@ -316,7 +349,7 @@
             const conflicts = new Map();
             
             if (!originalData || originalData.length === 0) {
-                 return alert("Nessun dato elaborato da visualizzare. L'analisi potrebbe aver fallito.");
+                 return alert("Nessun dato elaborato da visualizzare.");
             }
 
             originalData.forEach((row) => {
@@ -367,12 +400,12 @@
                 const conflictItem = document.createElement('div');
                 conflictItem.className = 'conflict-item';
                 let labelsText = Array.from(labels).map(l => `"${l}"`).join(' e ');
-                conflictItem.innerHTML = `<p>L'argomento <strong>"${escapeHtml(argument)}"</strong> è presente in più Label: ${labelsText}.</p><p>Scegli la Label corretta:</p><div class="resolve-buttons"></div>`;
+                conflictItem.innerHTML = `<p><i class="fas fa-exclamation-circle text-red-500"></i> L'argomento <strong>"${escapeHtml(argument)}"</strong> è presente in: ${labelsText}.</p><div class="resolve-buttons"></div>`;
                 const buttonsContainer = conflictItem.querySelector('.resolve-buttons');
                 labels.forEach(label => {
                     const button = document.createElement('button');
-                    button.className = 'button';
-                    button.textContent = `Assegna a "${label}"`;
+                    button.className = 'action-btn'; // New style
+                    button.innerHTML = `<i class="fas fa-check"></i> Assegna a "${label}"`;
                     button.onclick = () => resolveConflict(argument, label);
                     buttonsContainer.appendChild(button);
                 });
@@ -399,7 +432,7 @@
             labels.forEach(label => {
                 const labelGroup = document.createElement('div');
                 labelGroup.className = 'label-group';
-                labelGroup.innerHTML = `<div class="label-header">${escapeHtml(label)}</div>`;
+                labelGroup.innerHTML = `<div class="label-header"><span><i class="fas fa-tag"></i> ${escapeHtml(label)}</span></div>`;
                 const argumentList = document.createElement('ul');
                 argumentList.className = 'argument-list';
                 argumentList.id = `list-${label.replace(/\s+/g, '-')}`;
@@ -411,14 +444,14 @@
                     argumentItem.dataset.originalArgument = argument;
                     const checkboxId = `check-${label.replace(/[^a-zA-Z0-9]/g, '-')}-${argument.replace(/[^a-zA-Z0-9]/g, '-')}`;
                     argumentItem.innerHTML = `
-                        <i class="fas fa-grip-vertical drag-handle"></i>
+                        <div class="drag-handle"><i class="fas fa-grip-vertical"></i></div>
                         <input type="text" class="argument-text" value="${escapeHtml(argument)}">
                         <div class="institutional-check">
                             <input type="checkbox" id="${checkboxId}" ${argData.isInstitutional ? 'checked' : ''}>
                             <label for="${checkboxId}">Istituzionale</label>
                         </div>
                         <div class="argument-link">
-                            ${argData.link ? `<a href="${escapeHtml(String(argData.link))}" target="_blank" title="Apri link"><i class="fa-solid fa-link"></i></a>` : ''}
+                            ${argData.link ? `<a href="${escapeHtml(String(argData.link))}" target="_blank" title="Apri link"><i class="fas fa-external-link-alt"></i></a>` : ''}
                         </div>`;
                     argumentList.appendChild(argumentItem);
                 });
@@ -433,15 +466,14 @@
 
         function handleExport() {
             const btnOriginalText = exportButton.innerHTML;
-            exportButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Elaborazione...';
+            exportButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Elaborazione...';
             exportButton.disabled = true;
             setTimeout(() => {
                 try {
-                    // Logica da App 2: Legge lo stato dell'interfaccia
                     let updatedData = JSON.parse(JSON.stringify(originalData));
                     const uiStateMap = new Map();
                     document.querySelectorAll('.label-group').forEach(labelGroup => {
-                        const newLabel = labelGroup.querySelector('.label-header').textContent;
+                        const newLabel = labelGroup.querySelector('.label-header span').textContent.trim(); // Adjusted selector
                         labelGroup.querySelectorAll('.argument-item').forEach(item => {
                             const originalArgument = item.dataset.originalArgument;
                             const newArgumentText = item.querySelector('.argument-text').value;
@@ -460,7 +492,6 @@
                         }
                     });
                     
-                    // Ordinamento da App 2
                     updatedData.sort((a, b) => {
                         const dateA = convertToDate(a.Data);
                         const dateB = convertToDate(b.Data);
@@ -472,25 +503,19 @@
                     
                     // --- LOGICA DI EXPORT INIETTATA DA APP 1 ---
                     
-                    // --- MODIFICA: INIZIO NUOVA LOGICA PER WHATSAPP ---
                     const finalOutput = [];
                     if (updatedData.length > 0) {
                         const allHeaders = Object.keys(updatedData[0]);
 
                         updatedData.forEach(row => {
-                            // Aggiunge sempre la riga originale all'output
                             finalOutput.push(row);
 
-                            // Controlla la condizione per creare la riga aggiuntiva di Whatsapp
                             const isYouTube = (row.Canale || '').trim() === 'Youtube';
                             const hasWhaTag = (row.OriginalLabels || '').includes('#WHA');
                             
                             if (isYouTube && hasWhaTag) {
-                                // Crea un oggetto vuoto per la nuova riga
                                 const newWhatsappRow = {};
                                 allHeaders.forEach(header => { newWhatsappRow[header] = ''; });
-
-                                // Popola solo i campi specifici richiesti per la nuova riga
                                 newWhatsappRow.Canale = 'Whatsapp';
                                 newWhatsappRow.Link = 'Post Whatsapp';
                                 newWhatsappRow.Mese = row.Mese;
@@ -500,24 +525,19 @@
                                 newWhatsappRow.Argomento = row.Argomento;
                                 newWhatsappRow.Copy = row.Copy;
                                 newWhatsappRow.Istituzionale = row.Istituzionale;
-                                
-                                // Aggiunge la nuova riga di Whatsapp all'output
                                 finalOutput.push(newWhatsappRow);
                             }
                         });
                     }
-                    // --- MODIFICA: FINE LOGICA WHATSAPP ---
                     
                     if (finalOutput.length === 0) {
                         return alert('Nessun dato finale da esportare.');
                     }
 
-                    // Rimuove la colonna di supporto 'OriginalLabels'
                     finalOutput.forEach(row => delete row.OriginalLabels);
 
                     const newWs = XLSX.utils.json_to_sheet(finalOutput);
                     
-                    // Formattazione celle data da App 1
                     const header = Object.keys(finalOutput[0]);
                     const meseColIndex = header.indexOf('Mese');
                     const dataColIndex = header.indexOf('Data');
@@ -538,16 +558,14 @@
                         const cellAddress = XLSX.utils.encode_cell({ r: R, c: dataColIndex });
                         const cell = newWs[cellAddress];
                         if (cell) {
-                            cell.t = 's'; // Forza la colonna 'Data' come testo
+                            cell.t = 's';
                         }
                         }
                     }
                     
-                    // Creazione file da App 1
                     const newWb = XLSX.utils.book_new();
                     XLSX.utils.book_append_sheet(newWb, newWs, "Report Elaborato");
                     
-                    // --- MODIFICA PER NOME FILE DINAMICO ---
                     const now = new Date();
                     const year = now.getFullYear();
                     const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -558,15 +576,12 @@
                     const fileName = `report_elaborato_${timestamp}.xlsx`;
                     
                     XLSX.writeFile(newWb, fileName);
-                    // --- FINE MODIFICA ---
-
-                    // --- FINE LOGICA INIETTATA DA APP 1 ---
                     
-                    exportButton.innerHTML = '<i class="fa-solid fa-check"></i> Fatto!';
+                    exportButton.innerHTML = '<i class="fas fa-check"></i> Fatto!';
                     setTimeout(() => { exportButton.innerHTML = btnOriginalText; exportButton.disabled = false; }, 2000);
                 } catch (err) {
-                    console.error("Errore durante l'esportazione:", err);
-                    alert("Si è verificato un errore during la creazione del file Excel.");
+                    console.error("Errore export:", err);
+                    alert("Si è verificato un errore durante la creazione del file.");
                     exportButton.innerHTML = btnOriginalText;
                     exportButton.disabled = false;
                 }
@@ -597,18 +612,9 @@
             return null;
         }
 
-        function formatDateToDDMMYYYY(date) {
-            const d = new Date(date);
-            const day = String(d.getDate()).padStart(2, '0');
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const year = d.getFullYear();
-            return `${day}/${month}/${year}`;
-        }
-
-        // Listener per il pulsante di Esportazione (App 2)
         exportButton.addEventListener('click', handleExport);
 
     });
-    </script>
+  </script>
 </body>
 </html>
