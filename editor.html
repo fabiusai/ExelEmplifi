@@ -153,9 +153,6 @@
                 <select id="year-select"></select>
             </div>
             <div style="display:flex; gap:10px;">
-                <button id="paste-data-btn" class="action-btn yellow" style="flex:1; height: 42px;" title="Incolla i dati copiati dalla Dashboard">
-                    <i class="fas fa-paste"></i> Incolla
-                </button>
                 <button id="analyze-data" class="action-btn blue-fill" style="flex:1; height: 42px;">
                     <i class="fas fa-bolt"></i> Analizza
                 </button>
@@ -793,19 +790,14 @@
                         }
                     });
 
-                    // 3. Copia in memoria e Reindirizza (metodo sicuro)
+                    // 3. Salvataggio in Local Storage e Redirect
                     finalOutput.forEach(row => delete row.OriginalLabels);
                     
                     const jsonStr = JSON.stringify(finalOutput);
                     
-                    navigator.clipboard.writeText(jsonStr).then(() => {
-                        if(confirm("✅ DATI ELABORATI COPIATI!\n\nI dati aggiornati sono stati copiati nei tuoi appunti.\n\n1. Clicca OK per tornare alla Dashboard.\n2. In Dashboard useremo il tasto 'Incolla Dati'.")) {
-                            window.location.href = 'dashboard.html';
-                        }
-                    }).catch(err => {
-                        console.error("Errore clipboard:", err);
-                        alert("Impossibile copiare i dati automaticamente. Controlla i permessi.");
-                    });
+                    localStorage.setItem('social_dashboard_data', jsonStr);
+                    localStorage.setItem('social_dashboard_source', 'bridge');
+                    window.location.href = 'dashboard.html';
 
                 } catch (e) {
                     console.error(e);

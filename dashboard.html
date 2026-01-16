@@ -311,7 +311,6 @@
     </h1>
     <div class="header-actions">
       <button onclick="resetDashboard()" class="btn-header" style="background-color:#c0392b; display:inline-flex; margin-right:10px;" title="Pulisci dati e ricomincia"><i class="fas fa-trash"></i> Nuova Analisi</button>
-      <button onclick="pasteFromEditor()" class="btn-header" style="background-color:#27ae60; display:inline-flex; margin-right:10px;" title="Importa i dati copiati dall'Editor"><i class="fas fa-paste"></i> Incolla da Editor</button>
       <button onclick="sendToEditor()" class="btn-header" style="background-color:#f39c12; display:inline-flex; margin-right:10px;"><i class="fas fa-reply"></i> Modifica in Editor</button>
       <button id="json-exec-btn" class="btn-header"><i class="fas fa-file-contract"></i> JSON Executive</button>
     </div>
@@ -1501,15 +1500,10 @@
 
             const jsonStr = JSON.stringify(standardData);
             
-            // --- MODIFICA: COPIA NEGLI APPUNTI ---
-            navigator.clipboard.writeText(jsonStr).then(() => {
-                if(confirm("✅ DATI COPIATI IN MEMORIA!\n\nI dati sono stati copiati nei tuoi appunti.\n\n1. Clicca OK per aprire l'Editor.\n2. Nell'Editor useremo il tasto 'Incolla'.")) {
-                    window.location.href = 'editor.html';
-                }
-            }).catch(err => {
-                console.error("Errore clipboard:", err);
-                alert("Impossibile copiare automaticamente. Riprova o controlla i permessi del browser.");
-            });
+            // --- MODIFICA: SALVATAGGIO IN LOCAL STORAGE ---
+            localStorage.setItem('social_dashboard_data', jsonStr);
+            localStorage.setItem('social_dashboard_source', 'bridge');
+            window.location.href = 'editor.html';
 
         } catch(e) {
             console.error("Errore export verso editor", e);
