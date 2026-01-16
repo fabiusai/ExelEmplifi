@@ -111,7 +111,10 @@
 <body>
 
   <header>
-    <h1><i class="fas fa-edit"></i> Editor Report Social <span class="header-desc">Strumento di elaborazione Excel</span></h1>
+    <h1>
+        <a href="index.html" style="color:white; margin-right:15px; text-decoration:none;" title="Torna alla Home"><i class="fas fa-home"></i></a>
+        <i class="fas fa-edit"></i> Editor Report Social <span class="header-desc">Strumento di elaborazione Excel</span>
+    </h1>
   </header>
 
   <div class="container">
@@ -149,9 +152,12 @@
                 <label for="year-select">Anno</label>
                 <select id="year-select"></select>
             </div>
-            <div>
-                <button id="analyze-data" class="action-btn blue-fill" style="width: 100%; height: 42px;">
-                    <i class="fas fa-bolt"></i> Analizza Dati
+            <div style="display:flex; gap:10px;">
+                <button id="paste-data-btn" class="action-btn yellow" style="flex:1; height: 42px;" title="Incolla i dati copiati dalla Dashboard">
+                    <i class="fas fa-paste"></i> Incolla
+                </button>
+                <button id="analyze-data" class="action-btn blue-fill" style="flex:1; height: 42px;">
+                    <i class="fas fa-bolt"></i> Analizza
                 </button>
             </div>
         </div>
@@ -217,6 +223,71 @@
         // UI Helpers
         const uploadText = document.querySelector('.upload-text');
 
+        // --- LOGICA IMPORTAZIONE DA DASHBOARD (FIXED) ---
+        const dashSource = localStorage.getItem('social_dashboard_source');
+        const dashData = localStorage.getItem('social_dashboard_data');
+        
+        if (dashData && dashSource === 'bridge') {
+            try {
+                localStorage.removeItem('social_dashboard_source'); 
+                const parsedData = JSON.parse(dashData);
+                
+                if (Array.isArray(parsedData) && parsedData.length > 0) {
+                    if(uploadText) uploadText.innerHTML = `<strong>Dati ricevuti dalla Dashboard (${parsedData.length} righe)</strong>. Elaborazione...`;
+                    
+                    processedData = parsedData.map(r => {
+                        // Calcola Mese se mancante (per export)
+                        let meseCalc = r['Mese'] || '';
+                        if (!meseCalc && r['Data']) {
+                            try {
+                                const parts = String(r['Data']).split('/'); // Formato DD/MM/YYYY
+                                if (parts.length === 3) meseCalc = `01/${parts[1]}/${parts[2]}`;
+                            } catch(e) {}
+                        }
+
+                        return {
+                            Link: r['Link'] || '', 
+                            'Dettagli Emplifi': r['Dettagli Emplifi'] || '',
+                            Mese: meseCalc, 
+                            Data: r['Data'] || '',
+                            Canale: r['Canale'] || '',
+                            Interazioni: r['Interazioni'] || '', 
+                            Visualizzazioni: r['Visualizzazioni'] || '',
+                            'Persone raggiunte': r['Persone raggiunte'] || '', 
+                            Click: r['Click'] || '',
+                            'Like e reazioni': r['Like e reazioni'] || '', 
+                            Condivisioni: r['Condivisioni'] || '',
+                            Commenti: r['Commenti'] || '', 
+                            Campagna: r['Campagna'] || '',
+                            Label: r['Label'] || 'DA CLASSIFICARE', 
+                            Argomento: r['Argomento'] || 'Senza Titolo', 
+                            Copy: r['Copy'] || '',
+                            Istituzionale: r['Istituzionale'] || '',
+                            OriginalLabels: r['OriginalLabels'] || ''
+                        };
+                    });
+
+                    originalData = processedData;
+                    
+                    // Esegui immediatamente senza timeout per evitare race conditions
+                    resetUI();
+                    processData();
+                    
+                    // Forza visualizzazione se processData non ha generato conflitti
+                    const conflSec = document.getElementById('conflict-container');
+                    const edSec = document.getElementById('editor-section');
+                    if (conflSec.classList.contains('hidden') && edSec.classList.contains('hidden')) {
+                        renderEditor();
+                    }
+                } else {
+                    alert("I dati ricevuti dalla Dashboard sembrano vuoti.");
+                }
+            } catch(e) { 
+                console.error("Errore import Dashboard", e); 
+                alert("Errore durante l'importazione dei dati: " + e.message); 
+            }
+        }
+
         // --- Funzioni da App 1 (Fase 1) ---
         function populateYearSelector() {
             const currentYear = new Date().getFullYear();
@@ -248,6 +319,58 @@
           processedData = [];
           originalData = [];
         });
+
+        // --- LOGICA INCOLLA DATI (DIRETTA) ---
+        const pasteBtn = document.getElementById('paste-data-btn');
+        if (pasteBtn) {
+            pasteBtn.addEventListener('click', async () => {
+                try {
+                    const text = await navigator.clipboard.readText();
+                    if (!text.trim()) return alert("Gli appunti sembrano vuoti.");
+
+                    const parsedData = JSON.parse(text);
+                    if (Array.isArray(parsedData) && parsedData.length > 0) {
+                        
+                        if(uploadText) uploadText.innerHTML = `<strong>Dati incollati (${parsedData.length} righe)</strong>. Elaborazione...`;
+                        
+                        processedData = parsedData.map(r => {
+                            let meseCalc = r['Mese'] || '';
+                            if (!meseCalc && r['Data']) {
+                                try {
+                                    const parts = String(r['Data']).split('/'); 
+                                    if (parts.length === 3) meseCalc = `01/${parts[1]}/${parts[2]}`;
+                                } catch(e) {}
+                            }
+                            return {
+                                Link: r['Link'] || '', 'Dettagli Emplifi': r['Dettagli Emplifi'] || '',
+                                Mese: meseCalc, Data: r['Data'] || '', Canale: r['Canale'] || '',
+                                Interazioni: r['Interazioni'] || '', Visualizzazioni: r['Visualizzazioni'] || '',
+                                'Persone raggiunte': r['Persone raggiunte'] || '', Click: r['Click'] || '',
+                                'Like e reazioni': r['Like e reazioni'] || '', Condivisioni: r['Condivisioni'] || '',
+                                Commenti: r['Commenti'] || '', Campagna: r['Campagna'] || '',
+                                Label: r['Label'] || 'DA CLASSIFICARE', Argomento: r['Argomento'] || 'Senza Titolo', 
+                                Copy: r['Copy'] || '', Istituzionale: r['Istituzionale'] || '', OriginalLabels: r['OriginalLabels'] || ''
+                            };
+                        });
+
+                        originalData = processedData;
+                        resetUI();
+                        processData();
+                        
+                        const conflSec = document.getElementById('conflict-container');
+                        const edSec = document.getElementById('editor-section');
+                        if (conflSec.classList.contains('hidden') && edSec.classList.contains('hidden')) { renderEditor(); }
+                        
+                        // Piccolo feedback visivo opzionale (non bloccante come un alert se preferisci, ma qui uso alert per conferma)
+                        // alert("✅ Dati caricati!"); 
+
+                    } else { alert("Il testo incollato non contiene dati validi."); }
+                } catch(e) {
+                    console.error("Paste Error", e);
+                    alert("Impossibile leggere dagli appunti. Assicurati di aver concesso i permessi al browser.\n\nErrore: " + e.message);
+                }
+            });
+        }
 
         // Listener "Analizza Dati"
         analyzeBtn.addEventListener('click', () => {
@@ -356,9 +479,13 @@
             }
 
             originalData.forEach((row) => {
-                const argument = getTrimmedString(row['Argomento']);
-                const label = getTrimmedString(row['Label']);
-                if (!argument || !label) return;
+                // Usa valori di default se vuoti, per non perdere la riga
+                let argument = getTrimmedString(row['Argomento']);
+                if (!argument) { argument = "Senza Titolo"; row['Argomento'] = argument; }
+                
+                let label = getTrimmedString(row['Label']);
+                if (!label) { label = "DA CLASSIFICARE"; row['Label'] = label; }
+
                 if (argumentToLabelMap.has(argument) && argumentToLabelMap.get(argument) !== label) {
                     if (!conflicts.has(argument)) {
                         conflicts.set(argument, new Set([argumentToLabelMap.get(argument)]));
@@ -666,12 +793,19 @@
                         }
                     });
 
-                    // 3. Salva in LocalStorage e Reindirizza
+                    // 3. Copia in memoria e Reindirizza (metodo sicuro)
                     finalOutput.forEach(row => delete row.OriginalLabels);
-                    localStorage.setItem('social_dashboard_data', JSON.stringify(finalOutput));
-                    localStorage.setItem('social_dashboard_source', 'bridge');
                     
-                    window.location.href = 'dashboard.html';
+                    const jsonStr = JSON.stringify(finalOutput);
+                    
+                    navigator.clipboard.writeText(jsonStr).then(() => {
+                        if(confirm("✅ DATI ELABORATI COPIATI!\n\nI dati aggiornati sono stati copiati nei tuoi appunti.\n\n1. Clicca OK per tornare alla Dashboard.\n2. In Dashboard useremo il tasto 'Incolla Dati'.")) {
+                            window.location.href = 'dashboard.html';
+                        }
+                    }).catch(err => {
+                        console.error("Errore clipboard:", err);
+                        alert("Impossibile copiare i dati automaticamente. Controlla i permessi.");
+                    });
 
                 } catch (e) {
                     console.error(e);
