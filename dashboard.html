@@ -305,8 +305,16 @@
   </div>
 
   <header>
-    <h1><i class="fas fa-chart-line"></i> Dashboard Report Social Unificata <span style="font-size:0.6em; opacity:0.8; margin-left:10px; font-weight:300;">v3.0 (Con PED)</span></h1>
-    <div class="header-actions"><button id="json-exec-btn" class="btn-header"><i class="fas fa-file-contract"></i> JSON Executive</button></div>
+    <h1>
+      <a href="index.html" style="color:white; margin-right:15px; text-decoration:none;" title="Torna alla Home"><i class="fas fa-home"></i></a>
+      <i class="fas fa-chart-line"></i> Dashboard Report Social Unificata <span style="font-size:0.6em; opacity:0.8; margin-left:10px; font-weight:300;">v3.0 (Con PED)</span>
+    </h1>
+    <div class="header-actions">
+      <button onclick="resetDashboard()" class="btn-header" style="background-color:#c0392b; display:inline-flex; margin-right:10px;" title="Pulisci dati e ricomincia"><i class="fas fa-trash"></i> Nuova Analisi</button>
+      <button onclick="pasteFromEditor()" class="btn-header" style="background-color:#27ae60; display:inline-flex; margin-right:10px;" title="Importa i dati copiati dall'Editor"><i class="fas fa-paste"></i> Incolla da Editor</button>
+      <button onclick="sendToEditor()" class="btn-header" style="background-color:#f39c12; display:inline-flex; margin-right:10px;"><i class="fas fa-reply"></i> Modifica in Editor</button>
+      <button id="json-exec-btn" class="btn-header"><i class="fas fa-file-contract"></i> JSON Executive</button>
+    </div>
   </header>
   
   <div id="toast-container"></div>
@@ -1390,6 +1398,123 @@
             a.download = "Report_PED_Completo.zip";
             document.body.appendChild(a); a.click(); document.body.removeChild(a);
         });
+    }
+
+    // --- FUNZIONE RESET ---
+    window.resetDashboard = function() {
+        if(confirm("Vuoi davvero cancellare i dati attuali e iniziare una nuova analisi?")) {
+            localStorage.removeItem('social_dashboard_data');
+            localStorage.removeItem('social_dashboard_source');
+            window.location.reload();
+        }
+    }
+
+    // --- NUOVO: INCOLLA DA EDITOR ---
+    window.pasteFromEditor = async function() {
+        try {
+            // Leggi dagli appunti
+            const text = await navigator.clipboard.readText();
+            if (!text) return alert("Gli appunti sembrano vuoti.");
+            
+            let pastedData;
+            try { 
+                pastedData = JSON.parse(text); 
+            } catch(e) { 
+                return alert("Il contenuto degli appunti non è valido (non è un JSON corretto)."); 
+            }
+
+            if (!Array.isArray(pastedData) || pastedData.length === 0) {
+                return alert("Nessun dato valido trovato negli appunti.");
+            }
+
+            // Carica i dati in memoria
+            rawData = pastedData;
+            
+            // Configura le colonne (i dati dall'Editor hanno chiavi standard)
+            cols = {
+                data: 'Data', canale: 'Canale', vis: 'Visualizzazioni', inter: 'Interazioni',
+                label: 'Label', campagna: 'Campagna', arg: 'Argomento', copy: 'Copy',
+                link: 'Link', like: 'Like e reazioni', cond: 'Condivisioni',
+                istituzionale: 'Istituzionale'
+            };
+
+            // Filtra solo editoriale e aggiorna
+            filteredData = rawData.filter(r => String(r[cols.campagna]).trim().toLowerCase() === 'editoriale');
+            displayData = [...filteredData];
+
+            // Aggiorna Interfaccia
+            if(uploadBox) uploadBox.style.display = 'none';
+            mainContent.style.display = 'block'; 
+            jsonExecBtn.style.display = 'inline-block';
+            
+            populateFilterUI();
+            renderAll(displayData);
+            
+            showToast("✅ Dati incollati e caricati con successo!", "success");
+
+        } catch(err) {
+            console.error("Errore Incolla:", err);
+            alert("Impossibile leggere dagli appunti. Assicurati di aver dato i permessi al browser.\nErrore: " + err.message);
+        }
+    }
+
+    // --- FUNZIONE BRIDGE VERSO EDITOR (ROBUSTA) ---
+    window.sendToEditor = function() {
+        if (typeof rawData === 'undefined' || rawData.length === 0) {
+            alert('Nessun dato caricato da trasferire.');
+            return;
+        }
+        
+        try {
+            // Usa le colonne mappate globalmente (cols) che sono già corrette
+            const standardData = rawData.map(r => {
+                let argVal = r[cols.arg];
+                let copyVal = r[cols.copy] || '';
+                
+                // Fallback: Se argomento manca, usa il copy
+                if (!argVal) { argVal = copyVal ? (copyVal.substring(0, 40) + '...') : 'Nuovo Argomento'; }
+                
+                let labelVal = r[cols.label];
+                if (!labelVal) labelVal = 'Da Categorizzare';
+
+                // Cerca etichette originali (potrebbero non essere in cols)
+                const rawLabels = r['OriginalLabels'] || r['Labels'] || r[cols.label] || '';
+
+                return {
+                    'Data': r[cols.data] || '',
+                    'Canale': r[cols.canale] || '',
+                    'Visualizzazioni': r[cols.vis] || '',
+                    'Interazioni': r[cols.inter] || '',
+                    'Label': labelVal,
+                    'Campagna': r[cols.campagna] || '',
+                    'Argomento': argVal,
+                    'Copy': copyVal,
+                    'Link': r[cols.link] || '',
+                    'Dettagli Emplifi': r['Dettagli Emplifi'] || '',
+                    'Like e reazioni': r[cols.like] || '',
+                    'Condivisioni': r[cols.cond] || '',
+                    'Commenti': r['Commenti'] || '', 
+                    'Istituzionale': r[cols.istituzionale] || '',
+                    'OriginalLabels': rawLabels
+                };
+            });
+
+            const jsonStr = JSON.stringify(standardData);
+            
+            // --- MODIFICA: COPIA NEGLI APPUNTI ---
+            navigator.clipboard.writeText(jsonStr).then(() => {
+                if(confirm("✅ DATI COPIATI IN MEMORIA!\n\nI dati sono stati copiati nei tuoi appunti.\n\n1. Clicca OK per aprire l'Editor.\n2. Nell'Editor useremo il tasto 'Incolla'.")) {
+                    window.location.href = 'editor.html';
+                }
+            }).catch(err => {
+                console.error("Errore clipboard:", err);
+                alert("Impossibile copiare automaticamente. Riprova o controlla i permessi del browser.");
+            });
+
+        } catch(e) {
+            console.error("Errore export verso editor", e);
+            alert("Errore tecnico durante l'invio dati all'Editor: " + e.message);
+        }
     }
   </script>
 </body>
