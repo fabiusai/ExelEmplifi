@@ -1465,42 +1465,52 @@
         }
         
         try {
-            // Usa le colonne mappate globalmente (cols) che sono già corrette
+            // Rileva se i dati sono già nel formato "Standard" (provenienti dall'Editor)
+            // Se hanno le chiavi 'Label' e 'Argomento', usiamo quelle direttamente.
+            const isStandard = rawData.length > 0 && 'Label' in rawData[0] && 'Argomento' in rawData[0];
+
+            // Definisci la mappatura da usare: o quella standard 1:1 o quella rilevata dall'Excel
+            const mapKeys = isStandard ? {
+                data: 'Data', canale: 'Canale', vis: 'Visualizzazioni', inter: 'Interazioni',
+                label: 'Label', campagna: 'Campagna', arg: 'Argomento', copy: 'Copy',
+                link: 'Link', like: 'Like e reazioni', cond: 'Condivisioni',
+                istituzionale: 'Istituzionale'
+            } : cols;
+
             const standardData = rawData.map(r => {
-                let argVal = r[cols.arg];
-                let copyVal = r[cols.copy] || '';
+                let argVal = r[mapKeys.arg];
+                let copyVal = r[mapKeys.copy] || '';
                 
-                // Fallback: Se argomento manca, usa il copy
                 if (!argVal) { argVal = copyVal ? (copyVal.substring(0, 40) + '...') : 'Nuovo Argomento'; }
                 
-                let labelVal = r[cols.label];
+                let labelVal = r[mapKeys.label];
                 if (!labelVal) labelVal = 'Da Categorizzare';
 
-                // Cerca etichette originali (potrebbero non essere in cols)
-                const rawLabels = r['OriginalLabels'] || r['Labels'] || r[cols.label] || '';
+                // Preserva OriginalLabels se esiste, altrimenti usa la Label corrente
+                const rawLabels = r['OriginalLabels'] || r['Labels'] || r[mapKeys.label] || '';
 
                 return {
-                    'Data': r[cols.data] || '',
-                    'Canale': r[cols.canale] || '',
-                    'Visualizzazioni': r[cols.vis] || '',
-                    'Interazioni': r[cols.inter] || '',
+                    'Data': r[mapKeys.data] || '',
+                    'Canale': r[mapKeys.canale] || '',
+                    'Visualizzazioni': r[mapKeys.vis] || '',
+                    'Interazioni': r[mapKeys.inter] || '',
                     'Label': labelVal,
-                    'Campagna': r[cols.campagna] || '',
+                    'Campagna': r[mapKeys.campagna] || '',
                     'Argomento': argVal,
                     'Copy': copyVal,
-                    'Link': r[cols.link] || '',
+                    'Link': r[mapKeys.link] || '',
                     'Dettagli Emplifi': r['Dettagli Emplifi'] || '',
-                    'Like e reazioni': r[cols.like] || '',
-                    'Condivisioni': r[cols.cond] || '',
+                    'Like e reazioni': r[mapKeys.like] || '',
+                    'Condivisioni': r[mapKeys.cond] || '',
                     'Commenti': r['Commenti'] || '', 
-                    'Istituzionale': r[cols.istituzionale] || '',
+                    'Istituzionale': r[mapKeys.istituzionale] || '',
                     'OriginalLabels': rawLabels
                 };
             });
 
             const jsonStr = JSON.stringify(standardData);
             
-            // --- MODIFICA: GESTIONE MEMORIA PIENA ---
+            // --- GESTIONE MEMORIA PIENA E SALVATAGGIO ---
             try {
                 localStorage.setItem('social_dashboard_data', jsonStr);
                 localStorage.setItem('social_dashboard_source', 'bridge');
@@ -1514,7 +1524,7 @@
                         localStorage.setItem('social_dashboard_source', 'bridge');
                         window.location.href = 'editor.html';
                     } catch (e2) {
-                        alert("ERRORE CRITICO: Il file è troppo grande per la memoria del browser (limite 5MB). Riduci il numero di righe.");
+                        alert("ERRORE CRITICO: Il file è troppo grande per la memoria del browser. Riduci il numero di righe.");
                     }
                 } else {
                     throw e;
