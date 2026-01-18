@@ -795,9 +795,25 @@
                     
                     const jsonStr = JSON.stringify(finalOutput);
                     
-                    localStorage.setItem('social_dashboard_data', jsonStr);
-                    localStorage.setItem('social_dashboard_source', 'bridge');
-                    window.location.href = 'dashboard.html';
+                    try {
+                        localStorage.setItem('social_dashboard_data', jsonStr);
+                        localStorage.setItem('social_dashboard_source', 'bridge');
+                        window.location.href = 'dashboard.html';
+                    } catch (e) {
+                        if (e.name === 'QuotaExceededError' || e.code === 22) {
+                            console.warn("Memoria piena. Pulizia automatica...");
+                            localStorage.clear();
+                            try {
+                                localStorage.setItem('social_dashboard_data', jsonStr);
+                                localStorage.setItem('social_dashboard_source', 'bridge');
+                                window.location.href = 'dashboard.html';
+                            } catch (e2) {
+                                alert("ERRORE: I dati sono troppi per la memoria del browser. Impossibile salvare.");
+                            }
+                        } else {
+                            throw e;
+                        }
+                    }
 
                 } catch (e) {
                     console.error(e);
