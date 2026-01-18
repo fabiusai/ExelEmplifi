@@ -199,26 +199,22 @@
   <script>
     document.addEventListener('DOMContentLoaded', function () {
 
-        // --- Variabili globali da entrambe le app ---
+        // --- Variabili globali ---
         let workbookEmplifi = null;
-        let processedData = []; // Dati elaborati da App1
-        let originalData = [];  // Dati passati ad App2
-        let groupedData = {};   // Dati raggruppati per App2
+        let processedData = []; 
+        let originalData = [];  
+        let groupedData = {};   
 
-        // --- Elementi DOM da App 1 ---
+        // --- Elementi DOM ---
         const analyzeBtn = document.getElementById('analyze-data');
         const fileInputEmplifi = document.getElementById('file-input-emplifi');
         const monthSelect = document.getElementById('month-select');
         const yearSelect = document.getElementById('year-select');
-
-        // --- Elementi DOM da App 2 ---
         const conflictContainer = document.getElementById('conflict-container');
         const conflictList = document.getElementById('conflict-list');
         const editorSection = document.getElementById('editor-section');
         const editorContainer = document.getElementById('editor-container');
         const exportButton = document.getElementById('export-button');
-
-        // UI Helpers
         const uploadText = document.querySelector('.upload-text');
 
         // --- LOGICA IMPORTAZIONE DA DASHBOARD ---
@@ -234,11 +230,10 @@
                     if(uploadText) uploadText.innerHTML = `<strong>Dati ricevuti dalla Dashboard (${parsedData.length} righe)</strong>. Elaborazione...`;
                     
                     processedData = parsedData.map(r => {
-                        // Calcola Mese se mancante (per export)
                         let meseCalc = r['Mese'] || '';
                         if (!meseCalc && r['Data']) {
                             try {
-                                const parts = String(r['Data']).split('/'); // Formato DD/MM/YYYY
+                                const parts = String(r['Data']).split('/'); 
                                 if (parts.length === 3) meseCalc = `01/${parts[1]}/${parts[2]}`;
                             } catch(e) {}
                         }
@@ -267,26 +262,21 @@
 
                     originalData = processedData;
                     
-                    // Esegui immediatamente senza timeout per evitare race conditions
                     resetUI();
                     processData();
                     
-                    // Forza visualizzazione se processData non ha generato conflitti
                     const conflSec = document.getElementById('conflict-container');
                     const edSec = document.getElementById('editor-section');
                     if (conflSec.classList.contains('hidden') && edSec.classList.contains('hidden')) {
                         renderEditor();
                     }
-                } else {
-                    alert("I dati ricevuti dalla Dashboard sembrano vuoti.");
                 }
             } catch(e) { 
                 console.error("Errore import Dashboard", e); 
-                alert("Errore durante l'importazione dei dati: " + e.message); 
             }
         }
 
-        // --- Funzioni da App 1 (Fase 1) ---
+        // --- Funzioni Importazione ---
         function populateYearSelector() {
             const currentYear = new Date().getFullYear();
             for (let i = currentYear + 1; i >= currentYear - 5; i--) {
@@ -305,35 +295,26 @@
         fileInputEmplifi.addEventListener('change', e => {
           const f = e.target.files[0];
           if (!f) { workbookEmplifi = null; return; }
-          
           uploadText.innerHTML = `<strong>${f.name}</strong> pronto per l'analisi.`;
-          
           const reader = new FileReader();
           reader.onload = ev => { workbookEmplifi = XLSX.read(new Uint8Array(ev.target.result), { type: 'array' }); };
           reader.readAsArrayBuffer(f);
-          
-          // Resetta UI di App2
           resetUI();
           processedData = [];
           originalData = [];
         });
 
-        // Listener "Analizza Dati"
         analyzeBtn.addEventListener('click', () => {
           if (!workbookEmplifi) return alert('Seleziona prima un file Excel.');
-          
           resetUI();
-          
           const ws = workbookEmplifi.Sheets[workbookEmplifi.SheetNames[0]];
           let data = XLSX.utils.sheet_to_json(ws, { raw: true, defval: '' });
 
           if (!data.length) return alert('File vuoto o illeggibile.');
 
-          // Rileva se il file è un RAW Emplifi o un file GIÀ ELABORATO
           const isProcessedFile = data[0] && ('Argomento' in data[0] || 'Canale' in data[0]);
 
           if (isProcessedFile) {
-            // --- LOGICA IMPORTAZIONE FILE GIÀ ELABORATO ---
             processedData = data.map(r => {
                 let formattedDate = r['Data'] || '';
                 if (typeof r['Data'] === 'number') {
@@ -355,11 +336,9 @@
                     OriginalLabels: ''
                 };
             });
-
           } else {
-            // --- LOGICA ORIGINALE (FILE RAW EMPLIFI) ---
             data = data.filter(r => !(r['Video view count'] === '' && r['Total impressions'] === ''));
-            if (!data.length) return alert('Nessun dato valido trovato dopo il filtraggio.');
+            if (!data.length) return alert('Nessun dato valido trovato.');
 
             const selectedMonth = monthSelect.value;
             const selectedYear = yearSelect.value;
@@ -369,13 +348,13 @@
                 const dateCell = r['Date'];
                 let formattedDate = '';
                 if (dateCell instanceof Date) {
-                formattedDate = [String(dateCell.getDate()).padStart(2, '0'), String(dateCell.getMonth() + 1).padStart(2, '0'), dateCell.getFullYear().toString()].join('/');
+                    formattedDate = [String(dateCell.getDate()).padStart(2, '0'), String(dateCell.getMonth() + 1).padStart(2, '0'), dateCell.getFullYear().toString()].join('/');
                 } else if (typeof dateCell === 'number' && dateCell > 1) {
-                const parsedDate = XLSX.SSF.parse_date_code(dateCell);
-                const jsDate = new Date(parsedDate.y, parsedDate.m - 1, parsedDate.d, parsedDate.H || 0, parsedDate.M || 0, parsedDate.S || 0);
-                formattedDate = [String(jsDate.getDate()).padStart(2, '0'), String(jsDate.getMonth() + 1).padStart(2, '0'), jsDate.getFullYear().toString()].join('/');
+                    const parsedDate = XLSX.SSF.parse_date_code(dateCell);
+                    const jsDate = new Date(parsedDate.y, parsedDate.m - 1, parsedDate.d, parsedDate.H || 0, parsedDate.M || 0, parsedDate.S || 0);
+                    formattedDate = [String(jsDate.getDate()).padStart(2, '0'), String(jsDate.getMonth() + 1).padStart(2, '0'), jsDate.getFullYear().toString()].join('/');
                 } else if (typeof dateCell === 'string' && dateCell.length > 0) {
-                formattedDate = dateCell;
+                    formattedDate = dateCell;
                 }
                 
                 const allLabels = (r['Labels'] || '').split(';').map(s => s.trim());
@@ -408,7 +387,7 @@
           processData(); 
         });
 
-        // --- Funzioni da App 2 (Fase 2 & 3) ---
+        // --- Funzioni Logica Editor ---
 
         function getTrimmedString(value) {
             if (value === null || typeof value === 'undefined') return '';
@@ -425,7 +404,6 @@
             }
 
             originalData.forEach((row) => {
-                // Usa valori di default se vuoti, per non perdere la riga
                 let argument = getTrimmedString(row['Argomento']);
                 if (!argument) { argument = "Senza Titolo"; row['Argomento'] = argument; }
                 
@@ -441,10 +419,12 @@
                     argumentToLabelMap.set(argument, label);
                 }
             });
+            
             if (conflicts.size > 0) {
                 displayConflicts(conflicts);
                 return;
             }
+            
             originalData.forEach(row => {
                 const label = getTrimmedString(row['Label']);
                 const argument = getTrimmedString(row['Argomento']);
@@ -480,7 +460,7 @@
                 const buttonsContainer = conflictItem.querySelector('.resolve-buttons');
                 labels.forEach(label => {
                     const button = document.createElement('button');
-                    button.className = 'action-btn'; // New style
+                    button.className = 'action-btn'; 
                     button.innerHTML = `<i class="fas fa-check"></i> Assegna a "${label}"`;
                     button.onclick = () => resolveConflict(argument, label);
                     buttonsContainer.appendChild(button);
@@ -501,13 +481,12 @@
             return String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         }
 
-        // --- FUNZIONI UI EDITOR (ACCORDION & NEW LABEL) ---
+        // --- RENDER EDITOR ---
 
         function renderEditor() {
             editorSection.classList.remove('hidden');
             editorContainer.innerHTML = '';
             
-            // Ordina le label: "DA CLASSIFICARE" sempre per prima
             const labels = Object.keys(groupedData).sort((a, b) => {
                 if (a === 'DA CLASSIFICARE') return -1;
                 if (b === 'DA CLASSIFICARE') return 1;
@@ -518,11 +497,9 @@
                 createLabelGroupDOM(label, groupedData[label]);
             });
 
-            // Abilita export e dashboard btn
             exportButton.disabled = false;
         }
 
-        // 1. Crea il blocco HTML per una Label (Accordion)
         function createLabelGroupDOM(labelName, itemsData = {}) {
             const labelGroup = document.createElement('div');
             labelGroup.className = 'label-group'; 
@@ -530,20 +507,18 @@
             const count = Object.keys(itemsData).length;
             const isAlert = labelName === 'DA CLASSIFICARE';
 
-            // Stile speciale per DA CLASSIFICARE se contiene elementi
             let headerStyle = "";
             let badgeStyle = "";
             let alertIcon = "";
 
             if (isAlert && count > 0) {
                 labelGroup.style.border = "2px solid #e74c3c";
-                labelGroup.classList.add('open'); // Aperto di default per evidenziare il lavoro da fare
+                labelGroup.classList.add('open'); 
                 headerStyle = "background-color: #fee2e2; color: #c53030;";
                 badgeStyle = "background-color: #c53030; color: white;";
                 alertIcon = '<i class="fas fa-exclamation-circle" style="margin-right:8px;"></i>';
             }
 
-            // Header Accordion
             labelGroup.innerHTML = `
                 <div class="label-header" onclick="toggleAccordion(this)" style="${headerStyle}">
                     <div class="header-left">
@@ -560,7 +535,6 @@
             
             const listContainer = labelGroup.querySelector('.argument-list');
             
-            // Popola gli argomenti esistenti
             const argumentsInLabel = Object.keys(itemsData).sort();
             argumentsInLabel.forEach(argument => {
                 const argData = itemsData[argument];
@@ -568,52 +542,46 @@
                 listContainer.appendChild(argumentItem);
             });
 
-            // Inizializza SortableJS su questa lista
             new Sortable(listContainer, { 
                 group: 'shared', 
                 animation: 150, 
                 handle: '.drag-handle', 
                 ghostClass: 'sortable-ghost',
                 onEnd: function (evt) {
-                    // --- LOGICA NORMALIZZAZIONE DUPLICATI ---
-                    const item = evt.item;      // L'elemento appena spostato
-                    const targetList = evt.to;  // La lista in cui è atterrato
+                    const item = evt.item;      
+                    const targetList = evt.to;  
                     
-                    // Ottieni il testo dell'elemento spostato
                     const inputEl = item.querySelector('.argument-text');
                     if (inputEl) {
                         const movedText = inputEl.value.trim().toLowerCase();
                         
-                        // Cerca se esiste già un 'gemello' nella destinazione (escludendo se stesso)
                         const siblings = Array.from(targetList.querySelectorAll('.argument-item'));
                         const duplicate = siblings.find(el => el !== item && el.querySelector('.argument-text').value.trim().toLowerCase() === movedText);
                         
                         if (duplicate) {
-                            // Trovato duplicato! Rimuovi l'elemento spostato (merge)
                             item.remove();
-                            
-                            // Feedback visivo (flash giallo) su quello che rimane
                             duplicate.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                             duplicate.style.transition = 'background-color 0.4s';
                             const originalBg = duplicate.style.backgroundColor;
-                            duplicate.style.backgroundColor = '#fff3cd'; // Giallo alert
+                            duplicate.style.backgroundColor = '#fff3cd'; 
                             setTimeout(() => { duplicate.style.backgroundColor = originalBg; }, 1200);
                         }
                     }
-                    // ----------------------------------------
-
-                    updateCounts(); // Aggiorna i contatori quando sposti
+                    updateCounts(); 
                 }
             });
 
             editorContainer.appendChild(labelGroup);
         }
 
-        // 2. Crea il singolo elemento riga (Argomento)
+        // --- FUNZIONE MODIFICATA PER GESTIRE LA DOPPIA CHIAVE ---
         function createArgumentItemDOM(argument, argData, labelName) {
             const li = document.createElement('li');
             li.className = 'argument-item';
+            
+            // Salviamo SIA l'argomento CHE la label originale per identificarlo univocamente
             li.dataset.originalArgument = argument; 
+            li.dataset.originalLabel = labelName; 
             
             const uniqueId = Math.random().toString(36).substr(2, 9);
             
@@ -630,13 +598,11 @@
             return li;
         }
 
-        // 3. Funzione Globale: Apri/Chiudi Accordion
         window.toggleAccordion = function(headerElement) {
             const group = headerElement.parentElement;
             group.classList.toggle('open');
         }
 
-        // 4. Funzione Globale: Espandi/Chiudi Tutto
         window.toggleAllAccordions = function(open) {
             document.querySelectorAll('.label-group').forEach(el => {
                 if(open) el.classList.add('open');
@@ -644,7 +610,6 @@
             });
         }
 
-        // 5. Aggiorna i contatori numerici dopo il drag & drop
         function updateCounts() {
             document.querySelectorAll('.label-group').forEach(group => {
                 const count = group.querySelectorAll('.argument-item').length;
@@ -654,11 +619,9 @@
                 
                 if (badge) badge.textContent = count;
 
-                // Logica dinamica per rimuovere l'avviso "DA CLASSIFICARE" quando vuoto
                 if (titleElement && titleElement.textContent === 'DA CLASSIFICARE') {
                     const icon = header.querySelector('.fa-exclamation-circle');
                     if (count === 0) {
-                        // Reset stile normale (Rimuove il rosso)
                         group.style.border = '1px solid var(--border-color)';
                         header.style.backgroundColor = '#f8fafc';
                         header.style.color = 'var(--primary)';
@@ -666,7 +629,6 @@
                         badge.style.color = '#64748b';
                         if(icon) icon.style.display = 'none';
                     } else {
-                        // Ripristina stile alert (Rosso)
                         group.style.border = '2px solid #e74c3c';
                         header.style.backgroundColor = '#fee2e2';
                         header.style.color = '#c53030';
@@ -678,14 +640,11 @@
             });
         }
 
-        // 6. Funzione Globale: Aggiungi Nuova Label Manualmente
         window.addNewLabelByUser = function() {
             const name = prompt("Inserisci il nome della nuova Label:");
             if (name && name.trim() !== "") {
                 const cleanName = name.trim();
                 createLabelGroupDOM(cleanName, {});
-                
-                // Scorri fino alla nuova label e aprila
                 setTimeout(() => {
                     const allGroups = document.querySelectorAll('.label-group');
                     const last = allGroups[allGroups.length - 1];
@@ -697,7 +656,7 @@
             }
         }
         
-        // 7. Funzione Globale: Salva e Riorganizza (NUOVA)
+        // --- FUNZIONE SAVE AND REFRESH AGGIORNATA ---
         window.saveAndRefresh = function() {
             const btn = document.querySelector('button[onclick="saveAndRefresh()"]');
             const originalText = btn.innerHTML;
@@ -706,28 +665,32 @@
 
             setTimeout(() => {
                 try {
-                    // 1. Mappa lo stato attuale visuale (DOM)
+                    // 1. Mappa lo stato usando chiave composta LABEL|ARGOMENTO
                     const uiStateMap = new Map();
                     document.querySelectorAll('.label-group').forEach(labelGroup => {
                         const newLabel = labelGroup.querySelector('.label-title-text').textContent.trim();
                         labelGroup.querySelectorAll('.argument-item').forEach(item => {
-                            const originalArgument = item.dataset.originalArgument; // La chiave originale
-                            const newArgumentText = item.querySelector('.argument-text').value.trim(); // Il nuovo nome
+                            const originalArg = item.dataset.originalArgument; 
+                            const originalLbl = item.dataset.originalLabel; // Recupera Label Originale
+                            
+                            const newArgumentText = item.querySelector('.argument-text').value.trim();
                             const newIsInstitutional = item.querySelector('.institutional-check input').checked;
                             
-                            // Salviamo le modifiche fatte dall'utente
-                            uiStateMap.set(originalArgument, { newLabel, newArgumentText, newIsInstitutional });
+                            // CHIAVE COMPOSTA
+                            const uniqueKey = `${originalLbl}|${originalArg}`;
+                            uiStateMap.set(uniqueKey, { newLabel, newArgumentText, newIsInstitutional });
                         });
                     });
 
-                    // 2. Aggiorna i dati originali in memoria (originalData)
+                    // 2. Aggiorna i dati originali
                     let changesCount = 0;
                     originalData.forEach(row => {
-                        const originalRowArg = getTrimmedString(row['Argomento']);
-                        if (uiStateMap.has(originalRowArg)) {
-                            const updates = uiStateMap.get(originalRowArg);
+                        // Ricostruisci chiave dalla riga
+                        const currentKey = `${getTrimmedString(row['Label'])}|${getTrimmedString(row['Argomento'])}`;
+                        
+                        if (uiStateMap.has(currentKey)) {
+                            const updates = uiStateMap.get(currentKey);
                             
-                            // Applica le modifiche solo se è cambiato qualcosa
                             if (row['Label'] !== updates.newLabel || 
                                 row['Argomento'] !== updates.newArgumentText || 
                                 (row['Istituzionale'] == 1) !== updates.newIsInstitutional) {
@@ -740,11 +703,11 @@
                         }
                     });
 
-                    // 3. Ricalcola tutto (Grouping) e Ridisegna l'Editor
-                    processData(); // Questa funzione rigenera groupedData e chiama renderEditor()
+                    // 3. Ricalcola
+                    processData(); 
                     
-                    // 4. Feedback utente
-                    btn.innerHTML = '<i class="fas fa-check"></i> Salvato!';
+                    // 4. Feedback
+                    btn.innerHTML = `<i class="fas fa-check"></i> Salvato (${changesCount})`;
                     setTimeout(() => { 
                         btn.innerHTML = originalText; 
                         btn.disabled = false; 
@@ -756,7 +719,7 @@
                     btn.innerHTML = originalText;
                     btn.disabled = false;
                 }
-            }, 50); // Piccolo timeout per permettere alla UI di aggiornarsi
+            }, 50);
         };
 
         function handleExport() {
@@ -766,21 +729,26 @@
             setTimeout(() => {
                 try {
                     let updatedData = JSON.parse(JSON.stringify(originalData));
+                    
+                    // --- LOGICA EXPORT AGGIORNATA CON CHIAVE COMPOSTA ---
                     const uiStateMap = new Map();
                     document.querySelectorAll('.label-group').forEach(labelGroup => {
                         const newLabel = labelGroup.querySelector('.label-title-text').textContent.trim();
                         labelGroup.querySelectorAll('.argument-item').forEach(item => {
-                            const originalArgument = item.dataset.originalArgument;
+                            const originalArg = item.dataset.originalArgument;
+                            const originalLbl = item.dataset.originalLabel; // NUOVO
                             const newArgumentText = item.querySelector('.argument-text').value;
                             const newIsInstitutional = item.querySelector('.institutional-check input').checked;
-                            uiStateMap.set(originalArgument, { newLabel, newArgumentText, newIsInstitutional });
+                            
+                            const uniqueKey = `${originalLbl}|${originalArg}`;
+                            uiStateMap.set(uniqueKey, { newLabel, newArgumentText, newIsInstitutional });
                         });
                     });
                     
                     updatedData.forEach(row => {
-                        const originalArgument = getTrimmedString(row['Argomento']);
-                        if (uiStateMap.has(originalArgument)) {
-                            const updates = uiStateMap.get(originalArgument);
+                        const currentKey = `${getTrimmedString(row['Label'])}|${getTrimmedString(row['Argomento'])}`;
+                        if (uiStateMap.has(currentKey)) {
+                            const updates = uiStateMap.get(currentKey);
                             row['Label'] = updates.newLabel;
                             row['Argomento'] = updates.newArgumentText;
                             row['Istituzionale'] = updates.newIsInstitutional ? 1 : '';
@@ -795,8 +763,6 @@
                         if (!dateB) return -1;
                         return dateA - dateB;
                     });
-                    
-                    // --- LOGICA DI EXPORT INIETTATA DA APP 1 ---
                     
                     const finalOutput = [];
                     if (updatedData.length > 0) {
@@ -909,37 +875,38 @@
 
         exportButton.addEventListener('click', handleExport);
 
-        // --- NUOVO: BRIDGE VERSO DASHBOARD ---
         document.getElementById('send-to-dashboard-btn').addEventListener('click', function() {
             const btn = this;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparazione...';
             
             setTimeout(() => {
                 try {
-                    // 1. Rigenera i dati come farebbe l'export
+                    // --- LOGICA DASHBOARD AGGIORNATA CON CHIAVE COMPOSTA ---
                     let updatedData = JSON.parse(JSON.stringify(originalData));
                     const uiStateMap = new Map();
                     document.querySelectorAll('.label-group').forEach(labelGroup => {
                         const newLabel = labelGroup.querySelector('.label-title-text').textContent.trim();
                         labelGroup.querySelectorAll('.argument-item').forEach(item => {
-                            const originalArgument = item.dataset.originalArgument;
+                            const originalArg = item.dataset.originalArgument;
+                            const originalLbl = item.dataset.originalLabel; // NUOVO
                             const newArgumentText = item.querySelector('.argument-text').value;
                             const newIsInstitutional = item.querySelector('.institutional-check input').checked;
-                            uiStateMap.set(originalArgument, { newLabel, newArgumentText, newIsInstitutional });
+                            
+                            const uniqueKey = `${originalLbl}|${originalArg}`;
+                            uiStateMap.set(uniqueKey, { newLabel, newArgumentText, newIsInstitutional });
                         });
                     });
 
                     updatedData.forEach(row => {
-                        const originalArgument = getTrimmedString(row['Argomento']);
-                        if (uiStateMap.has(originalArgument)) {
-                            const updates = uiStateMap.get(originalArgument);
+                        const currentKey = `${getTrimmedString(row['Label'])}|${getTrimmedString(row['Argomento'])}`;
+                        if (uiStateMap.has(currentKey)) {
+                            const updates = uiStateMap.get(currentKey);
                             row['Label'] = updates.newLabel;
                             row['Argomento'] = updates.newArgumentText;
                             row['Istituzionale'] = updates.newIsInstitutional ? 1 : '';
                         }
                     });
 
-                    // 2. Logica Whatsapp specifica
                     const finalOutput = [];
                     const allHeaders = updatedData.length > 0 ? Object.keys(updatedData[0]) : [];
                     updatedData.forEach(row => {
@@ -958,7 +925,6 @@
                         }
                     });
 
-                    // 3. Salvataggio in Local Storage e Redirect
                     finalOutput.forEach(row => delete row.OriginalLabels);
                     
                     const jsonStr = JSON.stringify(finalOutput);
