@@ -1465,11 +1465,10 @@
         }
         
         try {
-            // Rileva se i dati sono già nel formato "Standard" (provenienti dall'Editor)
-            // Se hanno le chiavi 'Label' e 'Argomento', usiamo quelle direttamente.
-            const isStandard = rawData.length > 0 && 'Label' in rawData[0] && 'Argomento' in rawData[0];
+            // Rileva se i dati sono già standardizzati (hanno la chiave 'Label')
+            const isStandard = rawData.length > 0 && typeof rawData[0]['Label'] !== 'undefined';
 
-            // Definisci la mappatura da usare: o quella standard 1:1 o quella rilevata dall'Excel
+            // Se Standard, usa chiavi dirette. Altrimenti usa la mappatura cols (Excel)
             const mapKeys = isStandard ? {
                 data: 'Data', canale: 'Canale', vis: 'Visualizzazioni', inter: 'Interazioni',
                 label: 'Label', campagna: 'Campagna', arg: 'Argomento', copy: 'Copy',
@@ -1481,13 +1480,23 @@
                 let argVal = r[mapKeys.arg];
                 let copyVal = r[mapKeys.copy] || '';
                 
+                // Se manca l'argomento ma c'è il copy, genera un titolo
                 if (!argVal) { argVal = copyVal ? (copyVal.substring(0, 40) + '...') : 'Nuovo Argomento'; }
                 
+                // Recupera la Label. Se proviene dall'Editor, r['Label'] è quella corretta.
                 let labelVal = r[mapKeys.label];
-                if (!labelVal) labelVal = 'Da Categorizzare';
+                
+                // Fallback solo se il valore è veramente vuoto o nullo
+                if (!labelVal || labelVal.trim() === '') labelVal = 'DA CLASSIFICARE';
 
-                // Preserva OriginalLabels se esiste, altrimenti usa la Label corrente
-                const rawLabels = r['OriginalLabels'] || r['Labels'] || r[mapKeys.label] || '';
+                // IMPORTANTE: Se i dati sono standard (dall'Editor), NON cercare 'Labels' o 'OriginalLabels' vecchie
+                // che potrebbero contenere i dati non classificati originali. Usa la Label corrente come "Originale".
+                let rawLabels = '';
+                if (isStandard) {
+                    rawLabels = labelVal; // Consolida la modifica
+                } else {
+                    rawLabels = r['OriginalLabels'] || r['Labels'] || r[mapKeys.label] || '';
+                }
 
                 return {
                     'Data': r[mapKeys.data] || '',
@@ -1510,7 +1519,6 @@
 
             const jsonStr = JSON.stringify(standardData);
             
-            // --- GESTIONE MEMORIA PIENA E SALVATAGGIO ---
             try {
                 localStorage.setItem('social_dashboard_data', jsonStr);
                 localStorage.setItem('social_dashboard_source', 'bridge');
