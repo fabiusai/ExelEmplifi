@@ -14,29 +14,9 @@
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
-    /* --- CSS DESIGN SYSTEM (Copiato e adattato da Analisi_social) --- */
-    @font-face {
-        font-family: 'Avenir Next LT Pro';
-        src: url('https://cdn.jsdelivr.net/gh/hung1001/font-awesome-pro@4cac1a6/fonts/AvenirNextLTPro-Regular.woff2') format('woff2');
-        font-weight: normal;
-    }
-
-    :root {
-      --primary: #00529F;
-      --primary-hover: #003e7e;
-      --bg: #f4f6f8;
-      --text: #2c3e50;
-      --text-light: #607d8b;
-      --card-bg: #fff;
-      --border-radius: 12px;
-      --shadow: 0 4px 12px rgba(0,0,0,0.05);
-      
-      --inst-yellow: #ffcc00;
-      --inst-blue: #1b47b4;
-      --error-color: #e74c3c;
-      --border-color: #e2e8f0;
-    }
-    
+    /* --- CSS DESIGN SYSTEM --- */
+    @font-face { font-family: 'Avenir Next LT Pro'; src: url('https://cdn.jsdelivr.net/gh/hung1001/font-awesome-pro@4cac1a6/fonts/AvenirNextLTPro-Regular.woff2') format('woff2'); font-weight: normal; }
+    :root { --primary: #00529F; --primary-hover: #003e7e; --bg: #f4f6f8; --text: #2c3e50; --text-light: #607d8b; --card-bg: #fff; --border-radius: 12px; --shadow: 0 4px 12px rgba(0,0,0,0.05); --inst-yellow: #ffcc00; --inst-blue: #1b47b4; --error-color: #e74c3c; --border-color: #e2e8f0; }
     body { margin: 0; font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.5; }
     
     /* Header & Layout */
@@ -50,14 +30,12 @@
     .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f0f0; padding-bottom: 0.8rem; margin-bottom: 1.5rem; }
     .card h2 { margin: 0; color: var(--primary); font-size: 1.2rem; display: flex; align-items: center; gap: 10px; }
     
-    /* Upload Area */
+    /* Upload & Controls */
     .upload-area { background: var(--card-bg); border: 3px dashed #cbd5e0; border-radius: var(--border-radius); padding: 2rem; text-align: center; margin-bottom: 1.5rem; cursor: pointer; transition: all 0.2s; position: relative; }
     .upload-area:hover { border-color: var(--primary); background: #f0f7ff; }
     .upload-area input { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
     .upload-text { font-size: 1.1rem; color: var(--text-light); font-weight: 500; }
     .upload-icon { font-size: 2.5rem; color: var(--primary); margin-bottom: 0.5rem; display: block; }
-
-    /* Inputs & Selects Controls */
     .controls-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; align-items: end; }
     .input-group { display: flex; flex-direction: column; gap: 0.5rem; }
     .input-group label { font-weight: 600; color: var(--text); font-size: 0.9rem; }
@@ -79,33 +57,44 @@
     .conflict-item p { margin-bottom: 10px; font-weight: 500; }
     .resolve-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
 
-    /* Editor Section */
-    .editor-wrapper { display: flex; flex-direction: column; gap: 20px; }
-    .label-group { background: #fff; border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
-    .label-header { background-color: #f1f5f9; color: var(--primary); padding: 12px 20px; font-weight: 700; font-size: 1.05rem; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; }
-    .argument-list { padding: 10px; list-style-type: none; margin: 0; background: #fafafa; }
+    /* Editor Section & Accordion */
+    .editor-wrapper { display: flex; flex-direction: column; gap: 15px; }
     
-    /* Argument Item Styled like PED Rows */
-    .argument-item { display: flex; align-items: center; padding: 10px 15px; background-color: #fff; border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 8px; gap: 15px; transition: all 0.2s; }
-    .argument-item:hover { border-color: var(--primary); transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-    .drag-handle { cursor: grab; color: #94a3b8; padding: 4px; }
+    /* Sticky Toolbar */
+    .editor-toolbar { position: sticky; top: 70px; z-index: 90; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(5px); padding: 10px 15px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 10px; flex-wrap: wrap; }
+
+    .label-group { background: #fff; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: all 0.2s; }
+    .label-group.open { box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-color: #cbd5e0; }
+    
+    .label-header { background-color: #f8fafc; color: var(--primary); padding: 12px 15px; font-weight: 700; font-size: 1rem; border-bottom: 1px solid transparent; display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; transition: background 0.2s; }
+    .label-header:hover { background-color: #f1f5f9; }
+    .label-group.open .label-header { border-bottom-color: var(--border-color); background-color: #eff6ff; }
+    
+    .header-left { display: flex; align-items: center; gap: 10px; }
+    .chevron-icon { transition: transform 0.3s ease; color: #94a3b8; }
+    .label-group.open .chevron-icon { transform: rotate(180deg); color: var(--primary); }
+    .item-count { font-size: 0.75rem; background: #e2e8f0; color: #64748b; padding: 2px 8px; border-radius: 12px; font-weight: 600; }
+
+    /* Accordion Body */
+    .label-body { max-height: 0; overflow: hidden; transition: max-height 0.3s cubic-bezier(0, 1, 0, 1); background: #fafafa; }
+    .label-group.open .label-body { max-height: 5000px; transition: max-height 0.5s ease-in-out; }
+    
+    .argument-list { padding: 10px; list-style-type: none; margin: 0; min-height: 10px; /* Permette drop anche se vuoto */ }
+    
+    .argument-item { display: flex; align-items: center; padding: 8px 12px; background-color: #fff; border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 6px; gap: 12px; transition: all 0.2s; }
+    .argument-item:hover { border-color: var(--primary); transform: translateY(-1px); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .drag-handle { cursor: grab; color: #cbd5e0; padding: 4px; }
     .drag-handle:active { cursor: grabbing; color: var(--primary); }
-    .argument-text { flex-grow: 1; border: 1px solid transparent; border-bottom-color: #e2e8f0; padding: 6px; font-size: 0.95rem; color: #334155; font-weight: 500; }
+    .argument-text { flex-grow: 1; border: 1px solid transparent; border-bottom-color: #e2e8f0; padding: 4px 8px; font-size: 0.9rem; color: #334155; font-weight: 500; }
     .argument-text:focus { border-color: var(--primary); border-radius: 4px; }
     
-    .institutional-check { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #64748b; background: #f8fafc; padding: 4px 8px; border-radius: 4px; border: 1px solid #e2e8f0; }
-    .institutional-check input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
-    .argument-link a { color: var(--text-light); transition: color 0.2s; font-size: 1rem; }
-    .argument-link a:hover { color: var(--primary); }
-    
-    .sortable-ghost { opacity: 0.4; background-color: #e2e8f0; border: 2px dashed #94a3b8; }
-    
-    .hidden { display: none !important; }
+    .institutional-check { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: #64748b; background: #f8fafc; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0; }
     
     /* Utilities */
+    .hidden { display: none !important; }
     .text-center { text-align: center; }
     .mt-4 { margin-top: 1.5rem; }
-    
+    .sortable-ghost { opacity: 0.4; background-color: #e2e8f0; border: 2px dashed #94a3b8; }
   </style>
 </head>
 <body>
@@ -171,14 +160,21 @@
     <div id="editor-section" class="card hidden">
         <div class="card-header">
             <h2><i class="fas fa-layer-group"></i> 3. Organizza e Modifica</h2>
-            <button id="export-button" class="action-btn excel" disabled>
-                <i class="fas fa-file-export"></i> Esporta Excel Aggiornato
-            </button>
         </div>
         
+        <div class="editor-toolbar">
+            <div style="display:flex; gap:10px;">
+                <button onclick="toggleAllAccordions(true)" class="action-btn" title="Espandi tutto"><i class="fas fa-expand-alt"></i> Espandi</button>
+                <button onclick="toggleAllAccordions(false)" class="action-btn" title="Chiudi tutto"><i class="fas fa-compress-alt"></i> Chiudi</button>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button onclick="addNewLabelByUser()" class="action-btn blue-fill"><i class="fas fa-plus"></i> Nuova Label</button>
+            </div>
+        </div>
+
         <div class="bg-blue-50 p-3 rounded mb-4 text-sm text-gray-600 flex items-center gap-2 border border-blue-100">
             <i class="fas fa-info-circle text-blue-600"></i>
-            <span>Trascina gli argomenti tra le label per riorganizzarli. Modifica il testo o spunta "Istituzionale" se necessario.</span>
+            <span>Trascina gli argomenti tra le label (clicca per aprire/chiudere). Usa "Nuova Label" per creare categorie.</span>
         </div>
 
         <div id="editor-container" class="editor-wrapper"></div>
@@ -187,6 +183,8 @@
              <button onclick="document.getElementById('export-button').click()" class="action-btn excel" style="padding: 12px 24px; font-size: 1rem;">
                 <i class="fas fa-file-export"></i> Scarica Excel
             </button>
+            <button id="export-button" class="hidden"></button>
+            
             <button id="send-to-dashboard-btn" class="action-btn blue-fill" style="padding: 12px 24px; font-size: 1rem;">
                 <i class="fas fa-paper-plane"></i> Analizza in Dashboard
             </button>
@@ -220,7 +218,7 @@
         // UI Helpers
         const uploadText = document.querySelector('.upload-text');
 
-        // --- LOGICA IMPORTAZIONE DA DASHBOARD (FIXED) ---
+        // --- LOGICA IMPORTAZIONE DA DASHBOARD ---
         const dashSource = localStorage.getItem('social_dashboard_source');
         const dashData = localStorage.getItem('social_dashboard_data');
         
@@ -316,58 +314,6 @@
           processedData = [];
           originalData = [];
         });
-
-        // --- LOGICA INCOLLA DATI (DIRETTA) ---
-        const pasteBtn = document.getElementById('paste-data-btn');
-        if (pasteBtn) {
-            pasteBtn.addEventListener('click', async () => {
-                try {
-                    const text = await navigator.clipboard.readText();
-                    if (!text.trim()) return alert("Gli appunti sembrano vuoti.");
-
-                    const parsedData = JSON.parse(text);
-                    if (Array.isArray(parsedData) && parsedData.length > 0) {
-                        
-                        if(uploadText) uploadText.innerHTML = `<strong>Dati incollati (${parsedData.length} righe)</strong>. Elaborazione...`;
-                        
-                        processedData = parsedData.map(r => {
-                            let meseCalc = r['Mese'] || '';
-                            if (!meseCalc && r['Data']) {
-                                try {
-                                    const parts = String(r['Data']).split('/'); 
-                                    if (parts.length === 3) meseCalc = `01/${parts[1]}/${parts[2]}`;
-                                } catch(e) {}
-                            }
-                            return {
-                                Link: r['Link'] || '', 'Dettagli Emplifi': r['Dettagli Emplifi'] || '',
-                                Mese: meseCalc, Data: r['Data'] || '', Canale: r['Canale'] || '',
-                                Interazioni: r['Interazioni'] || '', Visualizzazioni: r['Visualizzazioni'] || '',
-                                'Persone raggiunte': r['Persone raggiunte'] || '', Click: r['Click'] || '',
-                                'Like e reazioni': r['Like e reazioni'] || '', Condivisioni: r['Condivisioni'] || '',
-                                Commenti: r['Commenti'] || '', Campagna: r['Campagna'] || '',
-                                Label: r['Label'] || 'DA CLASSIFICARE', Argomento: r['Argomento'] || 'Senza Titolo', 
-                                Copy: r['Copy'] || '', Istituzionale: r['Istituzionale'] || '', OriginalLabels: r['OriginalLabels'] || ''
-                            };
-                        });
-
-                        originalData = processedData;
-                        resetUI();
-                        processData();
-                        
-                        const conflSec = document.getElementById('conflict-container');
-                        const edSec = document.getElementById('editor-section');
-                        if (conflSec.classList.contains('hidden') && edSec.classList.contains('hidden')) { renderEditor(); }
-                        
-                        // Piccolo feedback visivo opzionale (non bloccante come un alert se preferisci, ma qui uso alert per conferma)
-                        // alert("✅ Dati caricati!"); 
-
-                    } else { alert("Il testo incollato non contiene dati validi."); }
-                } catch(e) {
-                    console.error("Paste Error", e);
-                    alert("Impossibile leggere dagli appunti. Assicurati di aver concesso i permessi al browser.\n\nErrore: " + e.message);
-                }
-            });
-        }
 
         // Listener "Analizza Dati"
         analyzeBtn.addEventListener('click', () => {
@@ -552,43 +498,127 @@
             return String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         }
 
+        // --- FUNZIONI UI EDITOR (ACCORDION & NEW LABEL) ---
+
         function renderEditor() {
             editorSection.classList.remove('hidden');
             editorContainer.innerHTML = '';
+            
             const labels = Object.keys(groupedData).sort();
+            
             labels.forEach(label => {
-                const labelGroup = document.createElement('div');
-                labelGroup.className = 'label-group';
-                labelGroup.innerHTML = `<div class="label-header"><span><i class="fas fa-tag"></i> ${escapeHtml(label)}</span></div>`;
-                const argumentList = document.createElement('ul');
-                argumentList.className = 'argument-list';
-                argumentList.id = `list-${label.replace(/\s+/g, '-')}`;
-                const argumentsInLabel = Object.keys(groupedData[label]).sort();
-                argumentsInLabel.forEach(argument => {
-                    const argData = groupedData[label][argument];
-                    const argumentItem = document.createElement('li');
-                    argumentItem.className = 'argument-item';
-                    argumentItem.dataset.originalArgument = argument;
-                    const checkboxId = `check-${label.replace(/[^a-zA-Z0-9]/g, '-')}-${argument.replace(/[^a-zA-Z0-9]/g, '-')}`;
-                    argumentItem.innerHTML = `
-                        <div class="drag-handle"><i class="fas fa-grip-vertical"></i></div>
-                        <input type="text" class="argument-text" value="${escapeHtml(argument)}">
-                        <div class="institutional-check">
-                            <input type="checkbox" id="${checkboxId}" ${argData.isInstitutional ? 'checked' : ''}>
-                            <label for="${checkboxId}">Istituzionale</label>
-                        </div>
-                        <div class="argument-link">
-                            ${argData.link ? `<a href="${escapeHtml(String(argData.link))}" target="_blank" title="Apri link"><i class="fas fa-external-link-alt"></i></a>` : ''}
-                        </div>`;
-                    argumentList.appendChild(argumentItem);
-                });
-                labelGroup.appendChild(argumentList);
-                editorContainer.appendChild(labelGroup);
+                createLabelGroupDOM(label, groupedData[label]);
             });
-            document.querySelectorAll('.argument-list').forEach(list => {
-                new Sortable(list, { group: 'shared', animation: 150, handle: '.drag-handle', ghostClass: 'sortable-ghost' });
-            });
+
+            // Abilita export e dashboard btn
             exportButton.disabled = false;
+        }
+
+        // 1. Crea il blocco HTML per una Label (Accordion)
+        function createLabelGroupDOM(labelName, itemsData = {}) {
+            const labelGroup = document.createElement('div');
+            labelGroup.className = 'label-group'; // Chiuso di default
+
+            const count = Object.keys(itemsData).length;
+
+            // Header Accordion
+            labelGroup.innerHTML = `
+                <div class="label-header" onclick="toggleAccordion(this)">
+                    <div class="header-left">
+                        <i class="fas fa-chevron-down chevron-icon"></i>
+                        <span class="label-title-text">${escapeHtml(labelName)}</span>
+                        <span class="item-count">${count}</span>
+                    </div>
+                </div>
+                <div class="label-body">
+                    <ul class="argument-list"></ul>
+                </div>
+            `;
+            
+            const listContainer = labelGroup.querySelector('.argument-list');
+            
+            // Popola gli argomenti esistenti
+            const argumentsInLabel = Object.keys(itemsData).sort();
+            argumentsInLabel.forEach(argument => {
+                const argData = itemsData[argument];
+                const argumentItem = createArgumentItemDOM(argument, argData, labelName);
+                listContainer.appendChild(argumentItem);
+            });
+
+            // Inizializza SortableJS su questa lista
+            new Sortable(listContainer, { 
+                group: 'shared', 
+                animation: 150, 
+                handle: '.drag-handle', 
+                ghostClass: 'sortable-ghost',
+                onEnd: function (evt) {
+                    updateCounts(); // Aggiorna i contatori quando sposti
+                }
+            });
+
+            editorContainer.appendChild(labelGroup);
+        }
+
+        // 2. Crea il singolo elemento riga (Argomento)
+        function createArgumentItemDOM(argument, argData, labelName) {
+            const li = document.createElement('li');
+            li.className = 'argument-item';
+            li.dataset.originalArgument = argument; 
+            
+            const uniqueId = Math.random().toString(36).substr(2, 9);
+            
+            li.innerHTML = `
+                <div class="drag-handle"><i class="fas fa-grip-vertical"></i></div>
+                <input type="text" class="argument-text" value="${escapeHtml(argument)}">
+                <div class="institutional-check">
+                    <input type="checkbox" id="chk-${uniqueId}" ${argData.isInstitutional ? 'checked' : ''}>
+                    <label for="chk-${uniqueId}">Ist.</label>
+                </div>
+                <div class="argument-link">
+                    ${argData.link ? `<a href="${escapeHtml(String(argData.link))}" target="_blank" title="Apri link"><i class="fas fa-external-link-alt"></i></a>` : ''}
+                </div>`;
+            return li;
+        }
+
+        // 3. Funzione Globale: Apri/Chiudi Accordion
+        window.toggleAccordion = function(headerElement) {
+            const group = headerElement.parentElement;
+            group.classList.toggle('open');
+        }
+
+        // 4. Funzione Globale: Espandi/Chiudi Tutto
+        window.toggleAllAccordions = function(open) {
+            document.querySelectorAll('.label-group').forEach(el => {
+                if(open) el.classList.add('open');
+                else el.classList.remove('open');
+            });
+        }
+
+        // 5. Aggiorna i contatori numerici dopo il drag & drop
+        function updateCounts() {
+            document.querySelectorAll('.label-group').forEach(group => {
+                const count = group.querySelectorAll('.argument-item').length;
+                group.querySelector('.item-count').textContent = count;
+            });
+        }
+
+        // 6. Funzione Globale: Aggiungi Nuova Label Manualmente
+        window.addNewLabelByUser = function() {
+            const name = prompt("Inserisci il nome della nuova Label:");
+            if (name && name.trim() !== "") {
+                const cleanName = name.trim();
+                createLabelGroupDOM(cleanName, {});
+                
+                // Scorri fino alla nuova label e aprila
+                setTimeout(() => {
+                    const allGroups = document.querySelectorAll('.label-group');
+                    const last = allGroups[allGroups.length - 1];
+                    if(last) {
+                        last.classList.add('open'); 
+                        last.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }, 100);
+            }
         }
 
         function handleExport() {
@@ -600,7 +630,7 @@
                     let updatedData = JSON.parse(JSON.stringify(originalData));
                     const uiStateMap = new Map();
                     document.querySelectorAll('.label-group').forEach(labelGroup => {
-                        const newLabel = labelGroup.querySelector('.label-header span').textContent.trim(); // Adjusted selector
+                        const newLabel = labelGroup.querySelector('.label-title-text').textContent.trim();
                         labelGroup.querySelectorAll('.argument-item').forEach(item => {
                             const originalArgument = item.dataset.originalArgument;
                             const newArgumentText = item.querySelector('.argument-text').value;
@@ -752,7 +782,7 @@
                     let updatedData = JSON.parse(JSON.stringify(originalData));
                     const uiStateMap = new Map();
                     document.querySelectorAll('.label-group').forEach(labelGroup => {
-                        const newLabel = labelGroup.querySelector('.label-header span').textContent.trim();
+                        const newLabel = labelGroup.querySelector('.label-title-text').textContent.trim();
                         labelGroup.querySelectorAll('.argument-item').forEach(item => {
                             const originalArgument = item.dataset.originalArgument;
                             const newArgumentText = item.querySelector('.argument-text').value;
