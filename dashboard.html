@@ -1500,10 +1500,26 @@
 
             const jsonStr = JSON.stringify(standardData);
             
-            // --- MODIFICA: SALVATAGGIO IN LOCAL STORAGE ---
-            localStorage.setItem('social_dashboard_data', jsonStr);
-            localStorage.setItem('social_dashboard_source', 'bridge');
-            window.location.href = 'editor.html';
+            // --- MODIFICA: GESTIONE MEMORIA PIENA ---
+            try {
+                localStorage.setItem('social_dashboard_data', jsonStr);
+                localStorage.setItem('social_dashboard_source', 'bridge');
+                window.location.href = 'editor.html';
+            } catch (e) {
+                if (e.name === 'QuotaExceededError' || e.code === 22) {
+                    console.warn("Memoria piena. Tentativo di pulizia automatica...");
+                    localStorage.clear();
+                    try {
+                        localStorage.setItem('social_dashboard_data', jsonStr);
+                        localStorage.setItem('social_dashboard_source', 'bridge');
+                        window.location.href = 'editor.html';
+                    } catch (e2) {
+                        alert("ERRORE CRITICO: Il file è troppo grande per la memoria del browser (limite 5MB). Riduci il numero di righe.");
+                    }
+                } else {
+                    throw e;
+                }
+            }
 
         } catch(e) {
             console.error("Errore export verso editor", e);
