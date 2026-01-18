@@ -504,7 +504,12 @@
             editorSection.classList.remove('hidden');
             editorContainer.innerHTML = '';
             
-            const labels = Object.keys(groupedData).sort();
+            // Ordina le label: "DA CLASSIFICARE" sempre per prima
+            const labels = Object.keys(groupedData).sort((a, b) => {
+                if (a === 'DA CLASSIFICARE') return -1;
+                if (b === 'DA CLASSIFICARE') return 1;
+                return a.localeCompare(b);
+            });
             
             labels.forEach(label => {
                 createLabelGroupDOM(label, groupedData[label]);
@@ -517,17 +522,32 @@
         // 1. Crea il blocco HTML per una Label (Accordion)
         function createLabelGroupDOM(labelName, itemsData = {}) {
             const labelGroup = document.createElement('div');
-            labelGroup.className = 'label-group'; // Chiuso di default
-
+            labelGroup.className = 'label-group'; 
+            
             const count = Object.keys(itemsData).length;
+            const isAlert = labelName === 'DA CLASSIFICARE';
+
+            // Stile speciale per DA CLASSIFICARE se contiene elementi
+            let headerStyle = "";
+            let badgeStyle = "";
+            let alertIcon = "";
+
+            if (isAlert && count > 0) {
+                labelGroup.style.border = "2px solid #e74c3c";
+                labelGroup.classList.add('open'); // Aperto di default per evidenziare il lavoro da fare
+                headerStyle = "background-color: #fee2e2; color: #c53030;";
+                badgeStyle = "background-color: #c53030; color: white;";
+                alertIcon = '<i class="fas fa-exclamation-circle" style="margin-right:8px;"></i>';
+            }
 
             // Header Accordion
             labelGroup.innerHTML = `
-                <div class="label-header" onclick="toggleAccordion(this)">
+                <div class="label-header" onclick="toggleAccordion(this)" style="${headerStyle}">
                     <div class="header-left">
                         <i class="fas fa-chevron-down chevron-icon"></i>
+                        ${alertIcon}
                         <span class="label-title-text">${escapeHtml(labelName)}</span>
-                        <span class="item-count">${count}</span>
+                        <span class="item-count" style="${badgeStyle}">${count}</span>
                     </div>
                 </div>
                 <div class="label-body">
@@ -598,7 +618,33 @@
         function updateCounts() {
             document.querySelectorAll('.label-group').forEach(group => {
                 const count = group.querySelectorAll('.argument-item').length;
-                group.querySelector('.item-count').textContent = count;
+                const badge = group.querySelector('.item-count');
+                const header = group.querySelector('.label-header');
+                const titleElement = group.querySelector('.label-title-text');
+                
+                if (badge) badge.textContent = count;
+
+                // Logica dinamica per rimuovere l'avviso "DA CLASSIFICARE" quando vuoto
+                if (titleElement && titleElement.textContent === 'DA CLASSIFICARE') {
+                    const icon = header.querySelector('.fa-exclamation-circle');
+                    if (count === 0) {
+                        // Reset stile normale (Rimuove il rosso)
+                        group.style.border = '1px solid var(--border-color)';
+                        header.style.backgroundColor = '#f8fafc';
+                        header.style.color = 'var(--primary)';
+                        badge.style.backgroundColor = '#e2e8f0';
+                        badge.style.color = '#64748b';
+                        if(icon) icon.style.display = 'none';
+                    } else {
+                        // Ripristina stile alert (Rosso)
+                        group.style.border = '2px solid #e74c3c';
+                        header.style.backgroundColor = '#fee2e2';
+                        header.style.color = '#c53030';
+                        badge.style.backgroundColor = '#c53030';
+                        badge.style.color = 'white';
+                        if(icon) icon.style.display = 'inline-block';
+                    }
+                }
             });
         }
 
