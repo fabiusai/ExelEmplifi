@@ -168,13 +168,16 @@
                 <button onclick="toggleAllAccordions(false)" class="action-btn" title="Chiudi tutto"><i class="fas fa-compress-alt"></i> Chiudi</button>
             </div>
             <div style="display:flex; gap:10px;">
+                <button onclick="saveAndRefresh()" class="action-btn" style="color: #d97706; border-color: #f59e0b; background: #fffbeb;">
+                    <i class="fas fa-sync-alt"></i> Salva e Riorganizza
+                </button>
                 <button onclick="addNewLabelByUser()" class="action-btn blue-fill"><i class="fas fa-plus"></i> Nuova Label</button>
             </div>
         </div>
 
         <div class="bg-blue-50 p-3 rounded mb-4 text-sm text-gray-600 flex items-center gap-2 border border-blue-100">
             <i class="fas fa-info-circle text-blue-600"></i>
-            <span>Trascina gli argomenti tra le label (clicca per aprire/chiudere). Usa "Nuova Label" per creare categorie.</span>
+            <span>Trascina gli argomenti tra le label. Usa "Salva e Riorganizza" per consolidare le modifiche (rinomine/spostamenti) prima di esportare.</span>
         </div>
 
         <div id="editor-container" class="editor-wrapper"></div>
@@ -693,6 +696,68 @@
                 }, 100);
             }
         }
+        
+        // 7. Funzione Globale: Salva e Riorganizza (NUOVA)
+        window.saveAndRefresh = function() {
+            const btn = document.querySelector('button[onclick="saveAndRefresh()"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvataggio...';
+            btn.disabled = true;
+
+            setTimeout(() => {
+                try {
+                    // 1. Mappa lo stato attuale visuale (DOM)
+                    const uiStateMap = new Map();
+                    document.querySelectorAll('.label-group').forEach(labelGroup => {
+                        const newLabel = labelGroup.querySelector('.label-title-text').textContent.trim();
+                        labelGroup.querySelectorAll('.argument-item').forEach(item => {
+                            const originalArgument = item.dataset.originalArgument; // La chiave originale
+                            const newArgumentText = item.querySelector('.argument-text').value.trim(); // Il nuovo nome
+                            const newIsInstitutional = item.querySelector('.institutional-check input').checked;
+                            
+                            // Salviamo le modifiche fatte dall'utente
+                            uiStateMap.set(originalArgument, { newLabel, newArgumentText, newIsInstitutional });
+                        });
+                    });
+
+                    // 2. Aggiorna i dati originali in memoria (originalData)
+                    let changesCount = 0;
+                    originalData.forEach(row => {
+                        const originalRowArg = getTrimmedString(row['Argomento']);
+                        if (uiStateMap.has(originalRowArg)) {
+                            const updates = uiStateMap.get(originalRowArg);
+                            
+                            // Applica le modifiche solo se è cambiato qualcosa
+                            if (row['Label'] !== updates.newLabel || 
+                                row['Argomento'] !== updates.newArgumentText || 
+                                (row['Istituzionale'] == 1) !== updates.newIsInstitutional) {
+                                
+                                row['Label'] = updates.newLabel;
+                                row['Argomento'] = updates.newArgumentText;
+                                row['Istituzionale'] = updates.newIsInstitutional ? 1 : '';
+                                changesCount++;
+                            }
+                        }
+                    });
+
+                    // 3. Ricalcola tutto (Grouping) e Ridisegna l'Editor
+                    processData(); // Questa funzione rigenera groupedData e chiama renderEditor()
+                    
+                    // 4. Feedback utente
+                    btn.innerHTML = '<i class="fas fa-check"></i> Salvato!';
+                    setTimeout(() => { 
+                        btn.innerHTML = originalText; 
+                        btn.disabled = false; 
+                    }, 1500);
+
+                } catch (e) {
+                    console.error(e);
+                    alert("Errore durante il salvataggio: " + e.message);
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            }, 50); // Piccolo timeout per permettere alla UI di aggiornarsi
+        };
 
         function handleExport() {
             const btnOriginalText = exportButton.innerHTML;
