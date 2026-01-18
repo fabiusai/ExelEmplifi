@@ -572,6 +572,33 @@
                 handle: '.drag-handle', 
                 ghostClass: 'sortable-ghost',
                 onEnd: function (evt) {
+                    // --- LOGICA NORMALIZZAZIONE DUPLICATI ---
+                    const item = evt.item;      // L'elemento appena spostato
+                    const targetList = evt.to;  // La lista in cui è atterrato
+                    
+                    // Ottieni il testo dell'elemento spostato
+                    const inputEl = item.querySelector('.argument-text');
+                    if (inputEl) {
+                        const movedText = inputEl.value.trim().toLowerCase();
+                        
+                        // Cerca se esiste già un 'gemello' nella destinazione (escludendo se stesso)
+                        const siblings = Array.from(targetList.querySelectorAll('.argument-item'));
+                        const duplicate = siblings.find(el => el !== item && el.querySelector('.argument-text').value.trim().toLowerCase() === movedText);
+                        
+                        if (duplicate) {
+                            // Trovato duplicato! Rimuovi l'elemento spostato (merge)
+                            item.remove();
+                            
+                            // Feedback visivo (flash giallo) su quello che rimane
+                            duplicate.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            duplicate.style.transition = 'background-color 0.4s';
+                            const originalBg = duplicate.style.backgroundColor;
+                            duplicate.style.backgroundColor = '#fff3cd'; // Giallo alert
+                            setTimeout(() => { duplicate.style.backgroundColor = originalBg; }, 1200);
+                        }
+                    }
+                    // ----------------------------------------
+
                     updateCounts(); // Aggiorna i contatori quando sposti
                 }
             });
