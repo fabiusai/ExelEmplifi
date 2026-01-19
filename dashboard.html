@@ -356,55 +356,184 @@
       <div id="tab-channels" class="tab-content"></div>
       
      <div id="tab-ped" class="tab-content">
-          <div class="card p-6 md:p-8 max-w-5xl mx-auto">
-              <div class="text-center mb-6">
-                  <h2 class="text-2xl font-bold" style="color:var(--primary);"><i class="fas fa-pencil-ruler"></i> Generatore Report PED</h2>
-                  <p class="mt-2 text-gray-500">Configura la grafica. I dati sono filtrati automaticamente dalla dashboard.</p>
-              </div>
-
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                  <div>
-                      <label class="block text-sm font-bold text-gray-700 mb-1">Dimensione Testo (px)</label>
-                      <input type="number" id="ped-font-size-input" value="18" min="10" max="40" class="w-full p-2 border rounded border-gray-300 focus:border-blue-500">
-                  </div>
-                  <div>
-                      <label class="block text-sm font-bold text-gray-700 mb-1">Interlinea (px)</label>
-                      <input type="number" id="ped-line-height-input" value="23" min="20" max="50" class="w-full p-2 border rounded border-gray-300 focus:border-blue-500">
-                  </div>
-              </div>
-
-              <div class="border-t pt-6 flex flex-col items-center gap-4">
-                  <div class="layout-switcher-container">
-                      <input type="radio" name="layout-style" id="layout-con-loghi" value="con-loghi" onchange="togglePedColors(true)">
-                      <label for="layout-con-loghi" class="layout-switcher-label">Con Loghi</label>
-                      
-                      <input type="radio" name="layout-style" id="layout-senza-loghi" value="senza-loghi" checked onchange="togglePedColors(false)">
-                      <label for="layout-senza-loghi" class="layout-switcher-label">Senza Loghi</label>
-                      
-                      <div class="switcher-glider"></div>
-                  </div>
-
-                  <div id="ped-color-toggle-container" class="flex items-center gap-3 transition-opacity duration-300" style="opacity:0; pointer-events:none;">
-                      <span class="text-sm font-medium text-gray-500">Outline Blu</span>
-                      <div class="relative inline-block w-12 h-6">
-                          <input type="checkbox" id="ped-logo-color-toggle" class="toggle-checkbox">
-                          <label for="ped-logo-color-toggle" class="toggle-label"></label>
-                      </div>
-                      <span class="text-sm font-bold text-gray-700">Colorati</span>
-                  </div>
-              </div>
-
-              <div class="mt-8 flex justify-center gap-4">
-                  <button onclick="refreshPedView()" class="action-btn blue-fill py-3 px-8 text-lg shadow-lg">
-                      <i class="fas fa-sync"></i> Genera / Aggiorna Grafici
-                  </button>
-                  <button onclick="downloadAllPedZip()" class="action-btn yellow py-3 px-8 text-lg shadow-lg">
-                      <i class="fas fa-file-archive"></i> Scarica ZIP Tutto
-                  </button>
-              </div>
+          <div class="container mx-auto mb-6 flex justify-start">
+              <button onclick="downloadAllPedZip()" class="action-btn yellow py-3 px-8 text-lg shadow-lg">
+                  <i class="fas fa-file-archive"></i> Scarica ZIP Completo
+              </button>
           </div>
 
-          <div id="ped-results-container" class="mt-8 container mx-auto space-y-8"></div>
+          <div class="container mx-auto mb-6">
+              <details class="accordion-item" style="background:#fff; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.05); overflow:hidden;">
+                  <summary style="padding:1.5rem; font-size:1.2rem; color:var(--primary); background:#f8fafc; font-weight:700;">
+                      <span><i class="fas fa-cogs"></i> Configurazione e Personalizzazione Grafica</span>
+                  </summary>
+                  <div class="accordion-content p-6">
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                          <div>
+                              <label class="block text-sm font-bold text-gray-700 mb-1">Dimensione Testo (px)</label>
+                              <input type="number" id="ped-font-size-input" value="18" min="10" max="40" class="w-full p-2 border rounded border-gray-300 focus:border-blue-500">
+                          </div>
+                          <div>
+                              <label class="block text-sm font-bold text-gray-700 mb-1">Interlinea (px)</label>
+                              <input type="number" id="ped-line-height-input" value="23" min="20" max="50" class="w-full p-2 border rounded border-gray-300 focus:border-blue-500">
+                          </div>
+                      </div>
+
+                      <div class="border-t pt-6 flex flex-col items-center gap-4">
+                          <div class="layout-switcher-container">
+                              <input type="radio" name="layout-style" id="layout-con-loghi" value="con-loghi" onchange="togglePedColors(true)">
+                              <label for="layout-con-loghi" class="layout-switcher-label">Con Loghi</label>
+                              
+                              <input type="radio" name="layout-style" id="layout-senza-loghi" value="senza-loghi" checked onchange="togglePedColors(false)">
+                              <label for="layout-senza-loghi" class="layout-switcher-label">Senza Loghi</label>
+                              
+                              <div class="switcher-glider"></div>
+                          </div>
+
+                          <div id="ped-color-toggle-container" class="flex items-center gap-3 transition-opacity duration-300" style="opacity:0; pointer-events:none;">
+                              <span class="text-sm font-medium text-gray-500">Outline Blu</span>
+                              <div class="relative inline-block w-12 h-6">
+                                  <input type="checkbox" id="ped-logo-color-toggle" class="toggle-checkbox">
+                                  <label for="ped-logo-color-toggle" class="toggle-label"></label>
+                              </div>
+                              <span class="text-sm font-bold text-gray-700">Colorati</span>
+                          </div>
+                      </div>
+
+                      <div class="mt-8 flex justify-center">
+                          <button onclick="refreshPedViewV2()" class="action-btn blue-fill py-3 px-8 text-lg shadow-lg">
+                              <i class="fas fa-sync"></i> Genera / Aggiorna Grafici
+                          </button>
+                      </div>
+                  </div>
+              </details>
+          </div>
+
+          <div id="ped-results-container" class="mt-8 container mx-auto space-y-4"></div>
+
+          <script>
+            // Sovrascrittura delle funzioni per usare la nuova logica V2
+            window.refreshPedViewV2 = function() {
+                if (!displayData || displayData.length === 0) {
+                    showToast("Nessun dato disponibile.", "warning");
+                    return;
+                }
+                const newData = processDataPedFromObjects(displayData);
+                // Mantiene le modifiche manuali se esistono
+                if (window.globalProcessedDataPed && Object.keys(window.globalProcessedDataPed).length > 0) {
+                    for (const lbl in newData) {
+                        if (window.globalProcessedDataPed[lbl]) {
+                            for (const arg in newData[lbl].argomenti) {
+                                if (window.globalProcessedDataPed[lbl].argomenti[arg]) {
+                                    newData[lbl].argomenti[arg].displayText = window.globalProcessedDataPed[lbl].argomenti[arg].displayText;
+                                    newData[lbl].argomenti[arg].customIndex = window.globalProcessedDataPed[lbl].argomenti[arg].customIndex;
+                                }
+                            }
+                        }
+                    }
+                }
+                window.globalProcessedDataPed = newData;
+                displayResultsPedV2(newData);
+                showToast("Grafici Aggiornati!", "success");
+            }
+
+            // Funzione di rendering V2 con Accordion Chiusi e Layout corretto
+            window.displayResultsPedV2 = function(processedData) {
+                const container = document.getElementById('ped-results-container');
+                container.innerHTML = '';
+                
+                if (Object.keys(processedData).length === 0) {
+                    container.innerHTML = '<div class="text-center p-8 text-gray-500">Nessun dato trovato per i filtri correnti.</div>';
+                    return;
+                }
+                
+                const layoutStyle = document.querySelector('input[name="layout-style"]:checked').value;
+                const useColors = document.getElementById('ped-logo-color-toggle').checked;
+
+                for (const label in processedData) {
+                    const data = processedData[label];
+                    const svgString = generatePedSVG(label, data, layoutStyle, useColors);
+                    const safeLabel = label.replace(/'/g, "\\'");
+
+                    // Creazione Accordion Item
+                    const details = document.createElement('details');
+                    details.className = 'accordion-item bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm mb-4';
+                    details.open = false; // CHIUSO DI DEFAULT
+                    
+                    // Header Accordion (Titolo visibile + Checkbox ALLINEATO A DESTRA)
+                    const summary = document.createElement('summary');
+                    summary.className = 'bg-gray-50 p-4 font-bold cursor-pointer flex justify-between items-center hover:bg-gray-100 transition-colors';
+                    summary.innerHTML = `
+                        <span class="text-lg text-blue-900 uppercase tracking-wide flex items-center gap-2 flex-grow"><i class="fas fa-chart-pie"></i> ${label}</span>
+                        <div onclick="event.stopPropagation();" class="flex-shrink-0 ml-4 flex items-center gap-2 bg-white px-3 py-1 rounded border border-gray-200 shadow-sm">
+                             <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" class="ppt-checkbox w-5 h-5 accent-green-600" onchange="handlePedCheckV2(this)">
+                                <span class="text-sm font-semibold text-gray-600">Inserito nel PPT</span>
+                             </label>
+                        </div>
+                    `;
+                    
+                    const content = document.createElement('div');
+                    content.className = 'accordion-content p-6 border-t border-gray-100 bg-white';
+                    
+                    // SVG Wrapper
+                    const svgContainer = document.createElement('div');
+                    svgContainer.className = 'svg-container-ped mb-4 p-2 bg-gray-50 rounded';
+                    svgContainer.id = `ped-svg-${label.replace(/[^a-z0-9]/gi, '_')}`;
+                    svgContainer.innerHTML = svgString;
+                    
+                    // Actions Buttons
+                    const actions = document.createElement('div');
+                    actions.className = 'flex justify-center gap-4 mt-4 border-t pt-4';
+                    actions.innerHTML = `
+                        <button class="action-btn" onclick="openEditModalPed('${safeLabel}')"><i class="fas fa-sort"></i> Modifica & Ordina</button>
+                        <button class="action-btn yellow" onclick="downloadSinglePed('${safeLabel}')"><i class="fas fa-download"></i> Scarica SVG</button>
+                    `;
+                    
+                    content.appendChild(svgContainer);
+                    content.appendChild(actions);
+                    details.appendChild(summary);
+                    details.appendChild(content);
+                    
+                    container.appendChild(details);
+                }
+            }
+
+            // Logica per spostare in fondo se completato
+            window.handlePedCheckV2 = function(checkbox) {
+                const details = checkbox.closest('details');
+                const container = document.getElementById('ped-results-container');
+                const summary = details.querySelector('summary');
+                
+                if (checkbox.checked) {
+                    // Sposta in fondo al contenitore
+                    container.appendChild(details);
+                    // Feedback visivo
+                    details.classList.add('opacity-75');
+                    summary.classList.add('bg-green-50');
+                    summary.querySelector('span').classList.add('text-green-800');
+                    // Assicura chiusura quando si sposta
+                    details.open = false; 
+                } else {
+                    // Rimuovi feedback (rimane in posizione attuale)
+                    details.classList.remove('opacity-75');
+                    summary.classList.remove('bg-green-50');
+                    summary.querySelector('span').classList.remove('text-green-800');
+                }
+            }
+
+            // FORZA L'USO DELLA LOGICA V2 ANCHE AL CARICAMENTO INIZIALE
+            window.addEventListener('load', function() {
+                // Sovrascrive le funzioni globali (V1) con quelle locali (V2)
+                window.displayResultsPed = window.displayResultsPedV2;
+                window.refreshPedView = window.refreshPedViewV2;
+                
+                // Se ci sono dati caricati, forza il re-render immediato per chiudere gli accordion
+                if(typeof displayData !== 'undefined' && displayData.length > 0) {
+                     window.refreshPedViewV2();
+                }
+            });
+          </script>
       </div>
                
       </div>
