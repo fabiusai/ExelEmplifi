@@ -307,7 +307,7 @@
   <header>
     <h1>
       <a href="index.html" style="color:white; margin-right:15px; text-decoration:none;" title="Torna alla Home"><i class="fas fa-home"></i></a>
-      <i class="fas fa-chart-line"></i> Dashboard Report Social Unificata <span style="font-size:0.6em; opacity:0.8; margin-left:10px; font-weight:300;">v3.1 (Con PED)</span>
+      <i class="fas fa-chart-line"></i> Dashboard Report Social Unificata <span style="font-size:0.6em; opacity:0.8; margin-left:10px; font-weight:300;">v3.2 (Con PED)</span>
     </h1>
     <div class="header-actions">
       <button onclick="resetDashboard()" class="btn-header" style="background-color:#c0392b; display:inline-flex; margin-right:10px;" title="Pulisci dati e ricomincia"><i class="fas fa-trash"></i> Nuova Analisi</button>
@@ -461,10 +461,14 @@
                     details.open = false; // CHIUSO DI DEFAULT
                     
                     // Header Accordion (Titolo visibile + Checkbox ALLINEATO A DESTRA)
+                    const argCount = Object.keys(data.argomenti).length;
                     const summary = document.createElement('summary');
                     summary.className = 'bg-gray-50 p-4 font-bold cursor-pointer flex justify-between items-center hover:bg-gray-100 transition-colors';
                     summary.innerHTML = `
-                        <span class="text-lg text-blue-900 uppercase tracking-wide flex items-center gap-2 flex-grow"><i class="fas fa-chart-pie"></i> ${label}</span>
+                        <span class="text-lg text-blue-900 uppercase tracking-wide flex items-center gap-2 flex-grow">
+                            <i class="fas fa-chart-pie"></i> ${label}
+                            <span class="ml-3 text-sm font-normal text-gray-500 bg-gray-200 px-2 py-1 rounded-full">(${argCount} Argomenti)</span>
+                        </span>
                         <div onclick="event.stopPropagation();" class="flex-shrink-0 ml-4 flex items-center gap-2 bg-white px-3 py-1 rounded border border-gray-200 shadow-sm">
                              <label class="flex items-center gap-2 cursor-pointer select-none">
                                 <input type="checkbox" class="ppt-checkbox w-5 h-5 accent-green-600" onchange="handlePedCheckV2(this)">
