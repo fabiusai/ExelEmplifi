@@ -736,16 +736,37 @@
         const sortedI = Object.entries(aggI).map(([k, v]) => ({ label: k, val: v })).sort((a, b) => b.val - a.val);
 
         const mainRow = document.createElement('div'); mainRow.className = 'tables-row';
+        
+        // COLONNA VISUALIZZAZIONI
         const colVis = document.createElement('div'); colVis.className = 'analysis-column';
-        colVis.appendChild(createTableCol('Visualizzazioni', sortedV, '<i class="far fa-eye"></i>', totalVis));
+        
+        // Accordion Tabella Visualizzazioni
+        const accVis = document.createElement('details'); accVis.className = 'accordion-item';
+        accVis.innerHTML = '<summary><i class="fas fa-table"></i> Tabella Dati Visualizzazioni</summary>';
+        const accVisContent = document.createElement('div'); accVisContent.className = 'accordion-content';
+        accVisContent.appendChild(createTableCol('Visualizzazioni', sortedV, '<i class="far fa-eye"></i>', totalVis));
+        accVis.appendChild(accVisContent);
+        colVis.appendChild(accVis);
+
+        // Wrapper Grafico Visualizzazioni
         const chartVWrapper = document.createElement('div'); chartVWrapper.className = 'label-chart-wrapper';
-        chartVWrapper.innerHTML = `<div class="label-chart-header"><span class="label-chart-title">Top Label per Visualizzazioni</span><div class="card-actions" id="actions-chart-v"></div></div><div class="chart-controls-row"><div class="control-group"><label><span><i class="fas fa-text-height"></i> Label</span> <span class="slider-val" id="val-v-label">1.0</span></label><input type="range" class="range-slider" id="slider-v-label" min="0.5" max="1.5" step="0.05" value="1.0"></div><div class="control-group"><label><span><i class="fas fa-hashtag"></i> Valori</span> <span class="slider-val" id="val-v-value">1.0</span></label><input type="range" class="range-slider" id="slider-v-value" min="0.5" max="1.5" step="0.05" value="1.0"></div><div class="control-group"><label><span><i class="fas fa-sort-numeric-down"></i> Decimali</span></label><select id="sel-v-decimals" style="width:200px; padding:5px; border-radius:4px; border:1px solid #ccc;"><option value="0">0</option><option value="1">1</option><option value="2" selected>2</option></select></div></div><div id="svg-container-v"></div>`;
+        chartVWrapper.innerHTML = `<div class="label-chart-header" style="border-bottom:none; margin-bottom:0; padding-bottom:0;"><div class="card-actions" id="actions-chart-v" style="width:100%; text-align:right;"></div></div><div class="chart-controls-row"><div class="control-group"><label><span><i class="fas fa-text-height"></i> Label</span> <span class="slider-val" id="val-v-label">1.0</span></label><input type="range" class="range-slider" id="slider-v-label" min="0.5" max="1.5" step="0.05" value="1.0"></div><div class="control-group"><label><span><i class="fas fa-hashtag"></i> Valori</span> <span class="slider-val" id="val-v-value">1.0</span></label><input type="range" class="range-slider" id="slider-v-value" min="0.5" max="1.5" step="0.05" value="1.0"></div><div class="control-group"><label><span><i class="fas fa-sort-numeric-down"></i> Decimali</span></label><select id="sel-v-decimals" style="width:200px; padding:5px; border-radius:4px; border:1px solid #ccc;"><option value="0">0</option><option value="1">1</option><option value="2" selected>2</option></select></div></div><div id="svg-container-v"></div>`;
         colVis.appendChild(chartVWrapper);
 
+        // COLONNA INTERAZIONI
         const colInt = document.createElement('div'); colInt.className = 'analysis-column';
-        colInt.appendChild(createTableCol('Interazioni', sortedI, '<i class="far fa-thumbs-up"></i>', totalInter));
+        
+        // Accordion Tabella Interazioni
+        const accInt = document.createElement('details'); accInt.className = 'accordion-item';
+        accInt.innerHTML = '<summary><i class="fas fa-table"></i> Tabella Dati Interazioni</summary>';
+        const accIntContent = document.createElement('div'); accIntContent.className = 'accordion-content';
+        accIntContent.appendChild(createTableCol('Interazioni', sortedI, '<i class="far fa-thumbs-up"></i>', totalInter));
+        accInt.appendChild(accIntContent);
+        colInt.appendChild(accInt);
+
+        // Wrapper Grafico Interazioni
         const chartIWrapper = document.createElement('div'); chartIWrapper.className = 'label-chart-wrapper';
-        chartIWrapper.innerHTML = `<div class="label-chart-header"><span class="label-chart-title">Top Label per Interazioni</span><div class="card-actions" id="actions-chart-i"></div></div><div class="chart-controls-row"><div class="control-group"><label><span><i class="fas fa-text-height"></i> Label</span> <span class="slider-val" id="val-i-label">1.0</span></label><input type="range" class="range-slider" id="slider-i-label" min="0.5" max="1.5" step="0.05" value="1.0"></div><div class="control-group"><label><span><i class="fas fa-hashtag"></i> Valori</span> <span class="slider-val" id="val-i-value">1.0</span></label><input type="range" class="range-slider" id="slider-i-value" min="0.5" max="1.5" step="0.05" value="1.0"></div><div class="control-group"><label><span><i class="fas fa-sort-numeric-down"></i> Decimali</span></label><select id="sel-i-decimals" style="width:200px; padding:5px; border-radius:4px; border:1px solid #ccc;"><option value="0">0</option><option value="1">1</option><option value="2" selected>2</option></select></div></div><div id="svg-container-i"></div>`;
+        chartIWrapper.innerHTML = `<div class="label-chart-header" style="border-bottom:none; margin-bottom:0; padding-bottom:0;"><div class="card-actions" id="actions-chart-i" style="width:100%; text-align:right;"></div></div><div class="chart-controls-row"><div class="control-group"><label><span><i class="fas fa-text-height"></i> Label</span> <span class="slider-val" id="val-i-label">1.0</span></label><input type="range" class="range-slider" id="slider-i-label" min="0.5" max="1.5" step="0.05" value="1.0"></div><div class="control-group"><label><span><i class="fas fa-hashtag"></i> Valori</span> <span class="slider-val" id="val-i-value">1.0</span></label><input type="range" class="range-slider" id="slider-i-value" min="0.5" max="1.5" step="0.05" value="1.0"></div><div class="control-group"><label><span><i class="fas fa-sort-numeric-down"></i> Decimali</span></label><select id="sel-i-decimals" style="width:200px; padding:5px; border-radius:4px; border:1px solid #ccc;"><option value="0">0</option><option value="1">1</option><option value="2" selected>2</option></select></div></div><div id="svg-container-i"></div>`;
         colInt.appendChild(chartIWrapper);
 
         mainRow.appendChild(colVis); mainRow.appendChild(colInt); container.appendChild(mainRow);
@@ -761,9 +782,18 @@
             const containerId = isV ? 'svg-container-v' : 'svg-container-i';
             const actionId = isV ? 'actions-chart-v' : 'actions-chart-i';
             const metric = isV ? 'Visualizzazioni' : 'Interazioni';
+            const totalVal = isV ? totalVis : totalInter;
+            
+            // Definisce titolo e subtitolo per SVG
+            const titleMain = isV ? "VISUALIZZAZIONI PER TEMA" : "INTERAZIONI PER TEMA";
+
             const filename = `Grafico_Label_${metric}.svg`;
             const containerDiv = document.getElementById(containerId); containerDiv.innerHTML = '';
-            const svg = renderLabelSvg(dataSet, metric, scaleLabel, scaleValue, decimals); containerDiv.appendChild(svg);
+            
+            // Genera SVG con titolo integrato (parametri extra passati: totalVal e titleMain)
+            const svg = renderLabelSvg(dataSet, metric, scaleLabel, scaleValue, decimals, totalVal, titleMain); 
+            containerDiv.appendChild(svg);
+            
             const actionDiv = document.getElementById(actionId); actionDiv.innerHTML = '';
             const btnCopy = document.createElement('button'); btnCopy.className = 'action-btn'; btnCopy.innerHTML = '<i class="far fa-copy"></i> Copia HQ'; btnCopy.onclick = () => copySvgHighRes(containerDiv.querySelector('svg')); 
             const btnDown = document.createElement('button'); btnDown.className = 'action-btn yellow'; btnDown.innerHTML = '<i class="fas fa-download"></i> SVG Trasparente'; btnDown.onclick = () => downloadTransparentSvg(containerDiv.querySelector('svg'), filename);
@@ -775,6 +805,7 @@
 
     function createTableCol(title, dataList, icon, totalVal) {
         const card = document.createElement('div'); card.className = 'table-col';
+        card.style.border = 'none'; card.style.boxShadow = 'none'; card.style.padding = '0'; // Rimuove stile card per evitare doppi bordi in accordion
         const header = document.createElement('div'); header.className = 'table-header-actions'; header.innerHTML = `<h3>${icon} ${title}</h3>`;
         const tbl = document.createElement('table'); header.appendChild(createTableCopyBtn(tbl)); card.appendChild(header);
         tbl.innerHTML = `<thead><tr><th>Label</th><th>Valore</th></tr></thead><tbody></tbody>`;
@@ -785,11 +816,68 @@
         const tw = document.createElement('div'); tw.className = 'table-wrapper'; tw.style.maxHeight = '400px'; tw.appendChild(tbl); card.appendChild(tw); return card;
     }
 
-    function renderLabelSvg(data, metricName, scaleLabel, scaleValue, decimals) {
-        const svgns = "http://www.w3.org/2000/svg"; const svg = document.createElementNS(svgns, 'svg');
-        const w = 2800; const h = 2000; const headerH = 20; const footerH = 50; const availableH = h - headerH - footerH; const rowH = availableH / (data.length || 1); const barHeight = rowH * 0.6;
-        const fontSizeRaw = Math.min(90, barHeight * 0.45) * scaleLabel; const valueFontSize = Math.min(70, barHeight * 0.55) * scaleValue;
-        svg.setAttribute('viewBox', `0 0 ${w} ${h}`); svg.setAttribute('xmlns', svgns); svg.style.fontFamily = "'Avenir Next LT Pro', 'Segoe UI', sans-serif";
+    function renderLabelSvg(data, metricName, scaleLabel, scaleValue, decimals, totalVal, titleMain) {
+        const svgns = "http://www.w3.org/2000/svg"; 
+        const svg = document.createElementNS(svgns, 'svg');
+        const w = 2800; 
+        const h = 2150; // Altezza aumentata per header grafico
+        const headerH = 200; // Spazio per titolo
+        const footerH = 50; 
+        const availableH = h - headerH - footerH; 
+        const rowH = availableH / (data.length || 1); 
+        const barHeight = rowH * 0.6;
+        
+        const fontSizeRaw = Math.min(90, barHeight * 0.45) * scaleLabel; 
+        const valueFontSize = Math.min(70, barHeight * 0.55) * scaleValue;
+        
+        svg.setAttribute('viewBox', `0 0 ${w} ${h}`); 
+        svg.setAttribute('xmlns', svgns); 
+        svg.style.fontFamily = "'Avenir Next LT Pro', 'Segoe UI', sans-serif";
+        svg.style.backgroundColor = 'white';
+
+        // --- TITOLO INTEGRATO NEL GRAFICO ---
+        if (titleMain) {
+            const titleGroup = document.createElementNS(svgns, 'g');
+            
+            // Testo Allineato a Sinistra
+            const textObj = document.createElementNS(svgns, 'text');
+            textObj.setAttribute('x', 40); // Margine Sinistro
+            textObj.setAttribute('y', 80);
+            textObj.setAttribute('text-anchor', 'start'); // Allineamento a sinistra
+            
+            const tspanTitle = document.createElementNS(svgns, 'tspan');
+            tspanTitle.textContent = titleMain + " ";
+            tspanTitle.setAttribute('fill', '#00529F');
+            tspanTitle.setAttribute('font-weight', '800'); // Semi-bold/Bold
+            tspanTitle.setAttribute('font-size', '75'); // Ingrandito
+            
+            const tspanSub = document.createElementNS(svgns, 'tspan');
+            tspanSub.textContent = `(Valore complessivo ${formatSmartKM(totalVal)})`;
+            tspanSub.setAttribute('fill', '#7b7b7a');
+            tspanSub.setAttribute('font-weight', '400'); // Normal
+            tspanSub.setAttribute('font-size', '60'); // Leggermente più piccolo del titolo ma proporzionato
+            tspanSub.setAttribute('dx', '15');
+
+            textObj.appendChild(tspanTitle);
+            textObj.appendChild(tspanSub);
+            titleGroup.appendChild(textObj);
+
+            // Riga Blu Sottile (più spessa come richiesto)
+            const line = document.createElementNS(svgns, 'line');
+            line.setAttribute('x1', 20);
+            line.setAttribute('x2', w - 20);
+            line.setAttribute('y1', 110); // Spostato sotto il testo
+            line.setAttribute('y2', 110);
+            line.setAttribute('stroke', '#00529F');
+            line.setAttribute('stroke-width', '6'); // Più spessa
+            titleGroup.appendChild(line);
+            
+            // Triangolino rimosso
+
+            svg.appendChild(titleGroup);
+        }
+        // ------------------------------------
+
         const maxVal = data.length > 0 ? data[0].val : 1; const maxBarW = w * 0.50; const startBarX = w * 0.35; const maxLabelPixelWidth = startBarX - 55; 
         data.forEach((item, i) => {
             const y = headerH + (i * rowH); const centerY = y + (rowH / 2); const barW = (item.val / maxVal) * maxBarW;
