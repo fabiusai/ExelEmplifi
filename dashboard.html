@@ -1207,7 +1207,7 @@
         svg.append("g").attr("class", "x-axis").attr("transform", `translate(0,${height})`)
            .call(xAxis).call(g => g.select(".domain").remove())
            .selectAll("text")
-           .style("font-size", "16px")
+           .style("font-size", "17px")
            .style("font-family", "'Avenir Next LT Pro', sans-serif")
            .style("fill", "#7b7b7a");
 
@@ -1219,7 +1219,7 @@
         yAxisG.selectAll(".tick line").clone().attr("x2", width).attr("stroke", "#e0e0e0").attr("stroke-opacity", 0.7);
         
         yAxisG.selectAll("text")
-           .style("font-size", "16px")
+           .style("font-size", "17px")
            .style("font-family", "'Avenir Next LT Pro', sans-serif")
            .style("fill", "#7b7b7a");
         const header = svg.append("g").attr("class", "chart-header").attr("transform", `translate(${-40}, 0)`);
@@ -1849,4 +1849,3 @@
   </script>
 </body>
 </html>
-
