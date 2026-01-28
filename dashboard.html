@@ -1098,16 +1098,97 @@
     function renderApp2ChartsAndTables(data, isCapped, limitVis, limitInt) {
         const tv = document.getElementById('tableVisChan').querySelector('tbody'); const ti = document.getElementById('tableInterChan').querySelector('tbody'); tv.innerHTML=''; ti.innerHTML='';
         if (data.length === 0) return;
-        data.forEach(r => { const d = formatDate(r[cols.data]); tv.innerHTML += `<tr><td>${d}</td><td>${formatNumberItalian(r[cols.vis])}</td></tr>`; ti.innerHTML += `<tr><td>${d}</td><td>${formatNumberItalian(r[cols.inter])}</td></tr>`; });
-        const visTot = data.reduce((a,c)=>a+Number(c[cols.vis]||0),0); const intTot = data.reduce((a,c)=>a+Number(c[cols.inter]||0),0);
-        const mode = window.currentGranularity || 'day'; const grouped = {};
+
+        // 1. Mappatura dati esistenti per accesso rapido
+        const dataMap = {};
         data.forEach(r => {
-            const dStr = formatDateForCompare(r[cols.data]); const dObj = new Date(dStr); let key, label;
-            if (mode === 'month') { key = `${dObj.getFullYear()}-${String(dObj.getMonth() + 1).padStart(2, '0')}-01`; const mesi = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"]; label = `${mesi[dObj.getMonth()]} ${dObj.getFullYear().toString().slice(-2)}`; } else if (mode === 'week') { const day = dObj.getDay(), diff = dObj.getDate() - day + (day === 0 ? -6 : 1); const monday = new Date(dObj.setDate(diff)); key = monday.toISOString().split('T')[0]; label = `Sett ${monday.getDate()}/${monday.getMonth()+1}`; } else { key = dStr; label = formatDate(dStr).split('/').slice(0,2).join('/'); }
-            if (!grouped[key]) grouped[key] = { label: label, vis: 0, inter: 0 }; grouped[key].vis += Number(r[cols.vis] || 0); grouped[key].inter += Number(r[cols.inter] || 0);
+            const ymd = formatDateForCompare(r[cols.data]); 
+            if(!dataMap[ymd]) dataMap[ymd] = { vis:0, inter:0 };
+            dataMap[ymd].vis += Number(r[cols.vis])||0;
+            dataMap[ymd].inter += Number(r[cols.inter])||0;
         });
-        const sortedKeys = Object.keys(grouped).sort(); const aggregatedData = sortedKeys.map(k => ({ date: grouped[k].label, vis: grouped[k].vis, inter: grouped[k].inter }));
-        drawChart('visChartContainer', aggregatedData, 'vis', 'VISUALIZZAZIONI', visTot, isCapped, limitVis); drawChart('interChartContainer', aggregatedData, 'inter', 'INTERAZIONI', intTot, isCapped, limitInt);
+
+        // 2. Calcolo Range esteso (Mese Intero)
+        const timestamps = data.map(r => new Date(formatDateForCompare(r[cols.data])).getTime()).filter(t => !isNaN(t));
+        const minTs = new Date(Math.min(...timestamps));
+        const maxTs = new Date(Math.max(...timestamps));
+        
+        // Imposta al primo giorno del mese della data minima
+        const currDate = new Date(minTs.getFullYear(), minTs.getMonth(), 1);
+        // Imposta all'ultimo giorno del mese della data massima
+        const endDate = new Date(maxTs.getFullYear(), maxTs.getMonth() + 1, 0);
+
+        const fullData = [];
+
+        // 3. Generazione sequenza completa giorni
+        while(currDate <= endDate) {
+            // Formato YYYY-MM-DD per chiave mappa
+            const y = currDate.getFullYear();
+            const m = String(currDate.getMonth() + 1).padStart(2, '0');
+            const d = String(currDate.getDate()).padStart(2, '0');
+            const isoKey = `${y}-${m}-${d}`;
+            
+            // Formato DD/MM/YYYY per display
+            const displayDate = `${d}/${m}/${y}`;
+
+            const vals = dataMap[isoKey] || { vis: 0, inter: 0 };
+            
+            fullData.push({
+                rawDate: isoKey,
+                display: displayDate,
+                vis: vals.vis,
+                inter: vals.inter
+            });
+
+            // Avanza di 1 giorno
+            currDate.setDate(currDate.getDate() + 1);
+        }
+
+        // 4. Popolamento Tabelle
+        fullData.forEach(row => {
+            tv.innerHTML += `<tr><td>${row.display}</td><td>${formatNumberItalian(row.vis)}</td></tr>`;
+            ti.innerHTML += `<tr><td>${row.display}</td><td>${formatNumberItalian(row.inter)}</td></tr>`;
+        });
+
+        const visTot = fullData.reduce((a,c)=>a+c.vis,0); 
+        const intTot = fullData.reduce((a,c)=>a+c.inter,0);
+
+        // 5. Raggruppamento per Grafici
+        const mode = window.currentGranularity || 'day'; 
+        const grouped = {};
+        
+        fullData.forEach(r => {
+            const dObj = new Date(r.rawDate);
+            let key, label;
+
+            if (mode === 'month') { 
+                key = `${dObj.getFullYear()}-${String(dObj.getMonth() + 1).padStart(2, '0')}-01`; 
+                const mesi = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"]; 
+                label = `${mesi[dObj.getMonth()]} ${dObj.getFullYear().toString().slice(-2)}`; 
+            } else if (mode === 'week') { 
+                const day = dObj.getDay(); 
+                // Lunedì come inizio settimana
+                const diff = dObj.getDate() - day + (day === 0 ? -6 : 1); 
+                const monday = new Date(dObj);
+                monday.setDate(diff);
+                key = monday.toISOString().split('T')[0]; 
+                label = `Sett ${monday.getDate()}/${monday.getMonth()+1}`; 
+            } else { 
+                key = r.rawDate; 
+                // Label grafico: gg/mm
+                label = r.display.split('/').slice(0,2).join('/'); 
+            }
+            
+            if (!grouped[key]) grouped[key] = { label: label, vis: 0, inter: 0 }; 
+            grouped[key].vis += r.vis; 
+            grouped[key].inter += r.inter;
+        });
+
+        const sortedKeys = Object.keys(grouped).sort(); 
+        const aggregatedData = sortedKeys.map(k => ({ date: grouped[k].label, vis: grouped[k].vis, inter: grouped[k].inter }));
+        
+        drawChart('visChartContainer', aggregatedData, 'vis', 'VISUALIZZAZIONI', visTot, isCapped, limitVis); 
+        drawChart('interChartContainer', aggregatedData, 'inter', 'INTERAZIONI', intTot, isCapped, limitInt);
     }
 
     function drawChart(containerId, aggregatedData, metric, title, total, isCapped, capLimit) {
