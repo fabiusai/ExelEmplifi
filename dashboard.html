@@ -1256,11 +1256,74 @@
     function openPostGraphModal(index) {
         const post = window.currentChannelPosts[index]; if(!post) return;
         currentPostData = { label: (post[cols.label] || 'Account').toUpperCase(), data: formatDate(post[cols.data]), argomento: post[cols.arg] || 'Argomento', copy: post[cols.copy] || '', views: Number(post[cols.vis] || 0), inter: Number(post[cols.inter] || 0) };
-        document.getElementById('pg-argomento').value = currentPostData.argomento; document.getElementById('pg-copy').value = currentPostData.copy; document.getElementById('pg-views').value = formatNumberFull(currentPostData.views); document.getElementById('pg-inter').value = formatNumberFull(currentPostData.inter); document.getElementById('pg-info').value = `${currentPostData.label} - ${currentPostData.data}`;
+        
+        // Popola i campi esistenti (Left)
+        document.getElementById('pg-argomento').value = currentPostData.argomento; 
+        document.getElementById('pg-copy').value = currentPostData.copy; 
+        document.getElementById('pg-views').value = formatNumberFull(currentPostData.views); 
+        document.getElementById('pg-inter').value = formatNumberFull(currentPostData.inter); 
+        document.getElementById('pg-info').value = `${currentPostData.label} - ${currentPostData.data}`;
+        
+        // Setup UI split per due grafici (Right)
+        const container = document.getElementById('pg-preview-container');
+        container.style.display = 'flex'; container.style.flexDirection = 'column'; container.style.gap = '20px'; container.style.overflowY = 'auto'; container.style.padding = '10px';
+        
+        // Inserisce textarea dedicata per il Badge
+        container.innerHTML = `
+            <div style="background:#fff; padding:15px; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
+                <h4 style="margin:0 0 10px 0; color:#00529F; font-size:0.9rem; font-weight:700;">ANTEPRIMA POST COMPLETO</h4>
+                <div id="pg-post-target" style="text-align:center;"></div>
+                <div style="display:flex; justify-content:center; gap:10px; margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
+                    <button class="action-btn yellow" onclick="downloadPostSvg()"><i class="fas fa-download"></i> SVG</button>
+                    <button class="action-btn active" onclick="copyPostSvg()"><i class="far fa-copy"></i> Copia HQ</button>
+                </div>
+            </div>
+            
+            <div style="background:#fff; padding:15px; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h4 style="margin:0; color:#00529F; font-size:0.9rem; font-weight:700;">BADGE ARGOMENTO</h4>
+                </div>
+                
+                <div style="margin-bottom:15px;">
+                     <label style="display:block; font-size:0.75rem; color:#666; font-weight:600; margin-bottom:4px;">TESTO DEDICATO (Usa INVIO per andare a capo)</label>
+                     <textarea id="pg-badge-custom-text" rows="2" style="width:100%; border:1px solid #ccc; border-radius:4px; padding:8px; font-family:sans-serif; font-size:14px;" oninput="updatePostSvg()">${currentPostData.argomento}</textarea>
+                </div>
+
+                <div id="pg-badge-target" style="text-align:center; min-height:60px; display:flex; align-items:center; justify-content:center; background:#f9f9f9; border:1px dashed #ddd; border-radius:4px; padding:10px;"></div>
+                
+                <div style="display:flex; justify-content:center; gap:10px; margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
+                    <button class="action-btn yellow" onclick="downloadTopicBadge()"><i class="fas fa-download"></i> SVG</button>
+                    <button class="action-btn active" onclick="copyTopicBadge()"><i class="far fa-copy"></i> Copia HQ</button>
+                </div>
+            </div>`;
+        
+        // Nascondi footer originale
+        const footer = document.querySelector('#postGraphModal .modal-footer');
+        if(footer) footer.style.display = 'none';
+
         updatePostSvg(); document.getElementById('postGraphModal').classList.add('open');
     }
-    function closePostGraphModal() { document.getElementById('postGraphModal').classList.remove('open'); }
-    function updatePostSvg() { const arg = document.getElementById('pg-argomento').value; const cpy = document.getElementById('pg-copy').value; const svgString = generatePostSvgString({ ...currentPostData, argomento: arg, copy: cpy }); document.getElementById('pg-preview-container').innerHTML = svgString; }
+    function closePostGraphModal() { 
+        document.getElementById('postGraphModal').classList.remove('open'); 
+        const footer = document.querySelector('#postGraphModal .modal-footer');
+        if(footer) footer.style.display = 'flex'; 
+    }
+    function updatePostSvg() { 
+        // 1. Post SVG (Usa input originale a sinistra)
+        const argLeft = document.getElementById('pg-argomento').value; 
+        const cpy = document.getElementById('pg-copy').value; 
+        const svgString = generatePostSvgString({ ...currentPostData, argomento: argLeft, copy: cpy }); 
+        const tgt1 = document.getElementById('pg-post-target');
+        if(tgt1) tgt1.innerHTML = svgString;
+
+        // 2. Badge SVG (Usa textarea dedicata a destra se esiste, altrimenti fallback)
+        const badgeInput = document.getElementById('pg-badge-custom-text');
+        const badgeText = badgeInput ? badgeInput.value : argLeft;
+        
+        const badgeSvg = generateTopicBadgeSvg(badgeText);
+        const tgt2 = document.getElementById('pg-badge-target');
+        if(tgt2) tgt2.innerHTML = badgeSvg;
+    }
     function generatePostSvgString(d) {
         const visualizzazioni = formatNumberFull(d.views); const interazioni = formatNumberFull(d.inter); const words = d.copy.split(' '); const lines = []; let currentLine = ''; const maxCharsPerLine = 62; const maxLines = 3;
         for (let i = 0; i < words.length; i++) { const word = words[i]; const testLine = currentLine ? currentLine + ' ' + word : word; if (testLine.length <= maxCharsPerLine) { currentLine = testLine; } else { lines.push(currentLine); currentLine = word; } if (lines.length === maxLines - 1 && i < words.length - 1) { let remainingWords = words.slice(i + 1).join(' '); let lastLineWithEllipsis = currentLine; const ellipsis = ' (...)'; while ((lastLineWithEllipsis + ' ' + remainingWords).length > maxCharsPerLine && remainingWords.includes(' ')) { const lastSpaceIndex = remainingWords.lastIndexOf(' '); if (lastSpaceIndex === -1) break; remainingWords = remainingWords.substring(0, lastSpaceIndex); } lastLineWithEllipsis = (lastLineWithEllipsis ? lastLineWithEllipsis + ' ' : '') + remainingWords; while (lastLineWithEllipsis.length + ellipsis.length > maxCharsPerLine && lastLineWithEllipsis.includes(' ')) { const lastSpaceIndex = lastLineWithEllipsis.lastIndexOf(' '); lastLineWithEllipsis = lastLineWithEllipsis.substring(0, lastSpaceIndex); } lines.push(lastLineWithEllipsis + ellipsis); currentLine = ''; break; } }
@@ -1268,8 +1331,39 @@
         const copyTSpan = lines.map((line, index) => `<tspan x="30" dy="${index === 0 ? 0 : 30}">${line}</tspan>`).join('');
         return `<svg width="868" height="441" viewBox="0 0 868 441" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="868" height="77" fill="#E1E9F6"/><text x="434" y="55" font-family="Arial, sans-serif" font-size="40" fill="#0A4BB8" text-anchor="middle" alignment-baseline="middle">${d.label}</text><text x="30" y="125" font-family="Arial, sans-serif" font-size="30" font-weight="bold" fill="#0A4BB8">${d.argomento}</text><text x="130" y="226" font-family="Arial, sans-serif" font-size="30" fill="#666666">Pubblicato il ${d.data}</text><text x="30" y="290" font-family="Arial, sans-serif" font-size="30" fill="#666666">${copyTSpan}</text><text x="30" y="415" font-family="Arial, sans-serif" font-size="32" fill="#0A4BB8" font-weight="bold">Visualizzazioni:</text><text x="270" y="415" font-family="Arial, sans-serif" font-size="32" fill="#666666">${visualizzazioni}</text><text x="410" y="415" font-family="Arial, sans-serif" font-size="32" fill="#0A4BB8" font-weight="bold">Interazioni:</text><text x="590" y="415" font-family="Arial, sans-serif" font-size="32" fill="#666666">${interazioni}</text></svg>`;
     }
-    function downloadPostSvg() { const svgEl = document.querySelector('#pg-preview-container svg'); if(!svgEl) return; const filename = `Grafica_${currentPostData.label}_${currentPostData.argomento.substring(0,10)}.svg`; downloadSvgDirect(svgEl, filename); showToast("SVG Scaricato", "success"); }
-    function copyPostSvg() { const svgEl = document.querySelector('#pg-preview-container svg'); if(!svgEl) return; copySvgHighRes(svgEl); }
+    function generateTopicBadgeSvg(text) {
+        // Gestione a capo tramite Invio (newline)
+        const raw = (text || 'ARGOMENTO').toUpperCase();
+        const parts = raw.split('\n').map(p => p.trim()).filter(p => p);
+        const l1 = parts[0] || '';
+        const l2 = parts[1] || '';
+
+        // Parametri fissi: Font costante, Altezza costante (viewBox 150)
+        const fontSize = 52;
+        const charW = 30; // Larghezza media stimata per Avenir
+        const paddingX = 70; // Aumentato padding laterale (era 40)
+        const totalViewBoxH = 150; 
+        const midY = totalViewBoxH / 2 + 5;
+        const lineOffset = 28;
+
+        const maxLen = Math.max(l1.length, l2.length);
+        const estW = (maxLen * charW) + (paddingX * 2);
+
+        // Calcolo Y: Centrato se 1 riga, Distribuito se 2
+        const y1 = l2 ? (midY - lineOffset) : midY;
+        const y2 = midY + lineOffset;
+
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${estW}" height="1cm" viewBox="0 0 ${estW} ${totalViewBoxH}">
+            <style>@font-face { font-family: "Avenir Next LT Pro"; src: url("https://cdn.jsdelivr.net/gh/hung1001/font-awesome-pro@4cac1a6/fonts/AvenirNextLTPro-Regular.woff2") format("woff2"); }</style>
+            <rect x="3" y="3" width="${estW-6}" height="${totalViewBoxH-6}" rx="35" ry="35" fill="#FFFFFF" stroke="#00529F" stroke-width="6"/>
+            <text x="${estW/2}" y="${y1}" font-family="'Avenir Next LT Pro', 'Segoe UI', sans-serif" font-weight="400" font-size="${fontSize}" fill="#00529F" text-anchor="middle" dominant-baseline="middle">${l1}</text>
+            ${l2 ? `<text x="${estW/2}" y="${y2}" font-family="'Avenir Next LT Pro', 'Segoe UI', sans-serif" font-weight="400" font-size="${fontSize}" fill="#00529F" text-anchor="middle" dominant-baseline="middle">${l2}</text>` : ''}
+        </svg>`;
+    }
+    function downloadPostSvg() { const svgEl = document.querySelector('#pg-post-target svg'); if(!svgEl) return; const filename = `Grafica_${currentPostData.label}.svg`; downloadSvgDirect(svgEl, filename); showToast("SVG Post Scaricato", "success"); }
+    function copyPostSvg() { const svgEl = document.querySelector('#pg-post-target svg'); if(!svgEl) return; copySvgHighRes(svgEl); }
+    function downloadTopicBadge() { const svgEl = document.querySelector('#pg-badge-target svg'); if(!svgEl) return; const filename = `Badge_${currentPostData.label}.svg`; downloadSvgDirect(svgEl, filename); showToast("SVG Badge Scaricato", "success"); }
+    function copyTopicBadge() { const svgEl = document.querySelector('#pg-badge-target svg'); if(!svgEl) return; copySvgHighRes(svgEl); }
 
     // --- JSON EXECUTIVE LOGIC UPDATED ---
     jsonExecBtn.addEventListener('click', () => {
