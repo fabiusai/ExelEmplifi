@@ -272,8 +272,14 @@
           <div class="modal-header"><span><i class="fas fa-palette"></i> Generatore Grafico Post</span><button class="close-modal" onclick="closePostGraphModal()"><i class="fas fa-times"></i></button></div>
           <div class="split-modal">
             <div class="split-left">
-                <div class="modal-row"><label>Argomento (Editabile)</label><input type="text" id="pg-argomento" oninput="updatePostSvg()"></div>
+                <div class="modal-row"><label>Argomento Post (Grafico in alto)</label><input type="text" id="pg-argomento" oninput="updatePostSvg()"></div>
                 <div class="modal-row"><label>Copy (Editabile)</label><textarea id="pg-copy" rows="5" oninput="updatePostSvg()"></textarea></div>
+                
+                <div class="modal-row" style="border-top:1px solid #eee; padding-top:15px; margin-top:15px; background: #fdfdfd; padding: 10px; border-radius: 6px; border: 1px solid #eee;">
+                    <label style="color:#00529F; font-weight:700;">TESTO BADGE (Usa INVIO per a capo)</label>
+                    <textarea id="pg-badge-custom-text" rows="2" oninput="updatePostSvg()" style="font-weight:bold; color:#00529F;"></textarea>
+                </div>
+                
                 <div class="modal-row"><label>Visualizzazioni</label><input type="text" id="pg-views" disabled style="background:#f0f0f0"></div>
                 <div class="modal-row"><label>Interazioni</label><input type="text" id="pg-inter" disabled style="background:#f0f0f0"></div>
                 <div class="modal-row"><label>Info</label><input type="text" id="pg-info" disabled style="background:#f0f0f0; font-size:0.85em;"></div>
@@ -1257,21 +1263,24 @@
         const post = window.currentChannelPosts[index]; if(!post) return;
         currentPostData = { label: (post[cols.label] || 'Account').toUpperCase(), data: formatDate(post[cols.data]), argomento: post[cols.arg] || 'Argomento', copy: post[cols.copy] || '', views: Number(post[cols.vis] || 0), inter: Number(post[cols.inter] || 0) };
         
-        // Popola i campi esistenti (Left)
+        // Popola i campi esistenti
         document.getElementById('pg-argomento').value = currentPostData.argomento; 
         document.getElementById('pg-copy').value = currentPostData.copy; 
         document.getElementById('pg-views').value = formatNumberFull(currentPostData.views); 
         document.getElementById('pg-inter').value = formatNumberFull(currentPostData.inter); 
         document.getElementById('pg-info').value = `${currentPostData.label} - ${currentPostData.data}`;
         
-        // Setup UI split per due grafici (Right)
+        // Popola il campo Badge esistente (Colonna Sinistra)
+        const badgeInput = document.getElementById('pg-badge-custom-text');
+        if(badgeInput) badgeInput.value = currentPostData.argomento;
+
+        // Setup UI split (Colonna Destra - SOLO PREVIEW)
         const container = document.getElementById('pg-preview-container');
         container.style.display = 'flex'; container.style.flexDirection = 'column'; container.style.gap = '20px'; container.style.overflowY = 'auto'; container.style.padding = '10px';
         
-        // Inserisce textarea dedicata per il Badge
         container.innerHTML = `
             <div style="background:#fff; padding:15px; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
-                <h4 style="margin:0 0 10px 0; color:#00529F; font-size:0.9rem; font-weight:700;">ANTEPRIMA POST COMPLETO</h4>
+                <h4 style="margin:0 0 10px 0; color:#00529F; font-size:0.9rem; font-weight:700;">ANTEPRIMA POST</h4>
                 <div id="pg-post-target" style="text-align:center;"></div>
                 <div style="display:flex; justify-content:center; gap:10px; margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
                     <button class="action-btn yellow" onclick="downloadPostSvg()"><i class="fas fa-download"></i> SVG</button>
@@ -1279,19 +1288,14 @@
                 </div>
             </div>
             
-            <div style="background:#fff; padding:15px; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <h4 style="margin:0; color:#00529F; font-size:0.9rem; font-weight:700;">BADGE ARGOMENTO</h4>
+            <div style="background:#fff; padding:15px; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.05); overflow:hidden;">
+                <h4 style="margin:0 0 25px 0; color:#00529F; font-size:0.9rem; font-weight:700;">ANTEPRIMA BADGE (ZOOM 1.8x)</h4>
+                
+                <div style="padding:10px 0; display:flex; justify-content:center; align-items:center; min-height:120px; overflow:hidden;">
+                    <div id="pg-badge-target" style="transform: scale(1.8); transform-origin: center; display:inline-block;"></div>
                 </div>
                 
-                <div style="margin-bottom:15px;">
-                     <label style="display:block; font-size:0.75rem; color:#666; font-weight:600; margin-bottom:4px;">TESTO DEDICATO (Usa INVIO per andare a capo)</label>
-                     <textarea id="pg-badge-custom-text" rows="2" style="width:100%; border:1px solid #ccc; border-radius:4px; padding:8px; font-family:sans-serif; font-size:14px;" oninput="updatePostSvg()">${currentPostData.argomento}</textarea>
-                </div>
-
-                <div id="pg-badge-target" style="text-align:center; min-height:60px; display:flex; align-items:center; justify-content:center; background:#f9f9f9; border:1px dashed #ddd; border-radius:4px; padding:10px;"></div>
-                
-                <div style="display:flex; justify-content:center; gap:10px; margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
+                <div style="display:flex; justify-content:center; gap:10px; margin-top:25px; border-top:1px solid #eee; padding-top:10px;">
                     <button class="action-btn yellow" onclick="downloadTopicBadge()"><i class="fas fa-download"></i> SVG</button>
                     <button class="action-btn active" onclick="copyTopicBadge()"><i class="far fa-copy"></i> Copia HQ</button>
                 </div>
@@ -1309,14 +1313,14 @@
         if(footer) footer.style.display = 'flex'; 
     }
     function updatePostSvg() { 
-        // 1. Post SVG (Usa input originale a sinistra)
+        // 1. Post SVG 
         const argLeft = document.getElementById('pg-argomento').value; 
         const cpy = document.getElementById('pg-copy').value; 
         const svgString = generatePostSvgString({ ...currentPostData, argomento: argLeft, copy: cpy }); 
         const tgt1 = document.getElementById('pg-post-target');
         if(tgt1) tgt1.innerHTML = svgString;
 
-        // 2. Badge SVG (Usa textarea dedicata a destra se esiste, altrimenti fallback)
+        // 2. Badge SVG (Legge dal campo a Sinistra)
         const badgeInput = document.getElementById('pg-badge-custom-text');
         const badgeText = badgeInput ? badgeInput.value : argLeft;
         
@@ -1338,10 +1342,10 @@
         const l1 = parts[0] || '';
         const l2 = parts[1] || '';
 
-        // Parametri fissi: Font costante, Altezza costante (viewBox 150)
+        // Parametri richiesti: Altezza 1cm, Angoli 35, Padding 70
         const fontSize = 52;
         const charW = 30; // Larghezza media stimata per Avenir
-        const paddingX = 70; // Aumentato padding laterale (era 40)
+        const paddingX = 70; // SPAZIO BIANCO AUMENTATO
         const totalViewBoxH = 150; 
         const midY = totalViewBoxH / 2 + 5;
         const lineOffset = 28;
