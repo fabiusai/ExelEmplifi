@@ -359,7 +359,7 @@
                 
                 const allLabels = (r['Labels'] || '').split(';').map(s => s.trim());
                 const labelsForProcessing = allLabels.filter(l => l !== '#IST');
-                const labelValue = labelsForProcessing.filter(l => l.startsWith('#')).map(l => ({'#PES':'Prodotti e servizi', '#TER':'Territorio', '#ISR':'Investor e stakeholder relations', '#FIL':'Filatelia', '#EB':'Employer branding', '#P160':'Poste 160', '#NED':'News editoriali', '#CET':'CSR e trasparenza', '#DEI':'Digital e Innovazione', '#ST':'Storici', '#RIC':'Ricorrenze', '#MICO':'Poste Italiane Premium Logistics Partner di Milano Cortina 2026'}[l] || l))[0] || '';
+                const labelValue = labelsForProcessing.filter(l => l.startsWith('#')).map(l => ({'#PES':'Prodotti e servizi', '#TER':'Territorio', '#ISR':'Investor e stakeholder relations', '#FIL':'Filatelia', '#EB':'Employer branding', '#P160':'Poste 160', '#NED':'News editoriali', '#CET':'CSR e trasparenza', '#DEI':'Digital e Innovazione', '#ST':'Storici', '#RIC':'Ricorrenze', '#MICO':'Poste Logistics Partner MiCo 2026'}[l] || l))[0] || '';
                 const argomentoValue = labelsForProcessing.filter(l => !l.startsWith('#'))[0] || '';
                 const hasKeywords = /lasco|del fante|rovere/i.test((r['Content'] || '').toLowerCase());
                 const isIstituzionalePreliminary = (hasKeywords || allLabels.includes('#IST')) ? 1 : '';
