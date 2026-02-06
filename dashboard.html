@@ -870,7 +870,14 @@
     function renderLabels(data) {
         const container = document.getElementById('tab-labels'); container.innerHTML = '';
         const aggV = {}, aggI = {}; let totalVis = 0; let totalInter = 0;
-        data.forEach(r => { const l = r[cols.label] || 'Nessuna'; const v = Number(r[cols.vis] || 0); const i = Number(r[cols.inter] || 0); aggV[l] = (aggV[l] || 0) + v; aggI[l] = (aggI[l] || 0) + i; totalVis += v; totalInter += i; });
+        data.forEach(r => { 
+            let l = r[cols.label] || 'Nessuna'; 
+            // PATCH: Corregge l'ordine delle parole per Investor Relations se rilevato errato
+            if (l.toLowerCase().includes('investor') && l.toLowerCase().includes('relations') && l.toLowerCase().includes('stakeholder')) {
+                l = "Investor e stakeholder relations";
+            }
+            const v = Number(r[cols.vis] || 0); const i = Number(r[cols.inter] || 0); aggV[l] = (aggV[l] || 0) + v; aggI[l] = (aggI[l] || 0) + i; totalVis += v; totalInter += i; 
+        });
         const sortedV = Object.entries(aggV).map(([k, v]) => ({ label: k, val: v })).sort((a, b) => b.val - a.val);
         const sortedI = Object.entries(aggI).map(([k, v]) => ({ label: k, val: v })).sort((a, b) => b.val - a.val);
 
@@ -1020,12 +1027,26 @@
         const maxVal = data.length > 0 ? data[0].val : 1; const maxBarW = w * 0.50; const startBarX = w * 0.35; const maxLabelPixelWidth = startBarX - 55; 
         data.forEach((item, i) => {
             const y = headerH + (i * rowH); const centerY = y + (rowH / 2); const barW = (item.val / maxVal) * maxBarW;
-            const estimatedTextPixelWidth = item.label.length * (fontSizeRaw * 0.48); const shouldWrap = estimatedTextPixelWidth > maxLabelPixelWidth;
+            const charW = fontSizeRaw * 0.55; 
+            const estimatedTextPixelWidth = item.label.length * charW; 
+            const shouldWrap = estimatedTextPixelWidth > maxLabelPixelWidth;
+            
             const labelText = document.createElementNS(svgns, 'text'); labelText.setAttribute('x', 20); labelText.setAttribute('font-size', fontSizeRaw); labelText.setAttribute('fill', '#333');
+            
             if(shouldWrap) {
-                 const words = item.label.split(' '); let line1 = '', line2 = ''; const targetLen = item.label.length / 2;
-                 for(let wd of words) { if ( (line1.length < targetLen || line1.length === 0) && (line1.length + wd.length) * (fontSizeRaw * 0.48) < maxLabelPixelWidth) { line1 += wd + ' '; } else { line2 += wd + ' '; } }
-                 if(!line1 && words.length > 0) { line1 = words[0]; line2 = words.slice(1).join(' '); }
+                 const words = item.label.split(' ');
+                 let line1 = words[0] + ' '; 
+                 let line2 = '';
+                 
+                 for(let i = 1; i < words.length; i++) {
+                    const wd = words[i];
+                    if (line2.length > 0 || (line1.length + wd.length + 1) * charW >= maxLabelPixelWidth) {
+                        line2 += wd + ' ';
+                    } else {
+                        line1 += wd + ' ';
+                    }
+                 }
+                 
                  const lineHeight = fontSizeRaw * 1.1; const startY = centerY - (fontSizeRaw * 0.2);
                  const ts1 = document.createElementNS(svgns, 'tspan'); ts1.textContent = line1.trim(); ts1.setAttribute('x', 20); ts1.setAttribute('y', startY); 
                  const ts2 = document.createElementNS(svgns, 'tspan'); ts2.textContent = line2.trim(); ts2.setAttribute('x', 20); ts2.setAttribute('dy', lineHeight); labelText.appendChild(ts1); labelText.appendChild(ts2);
