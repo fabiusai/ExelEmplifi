@@ -362,9 +362,30 @@
       <div id="tab-channels" class="tab-content"></div>
       
      <div id="tab-ped" class="tab-content">
-          <div class="container mx-auto mb-6 flex justify-start">
+          <div id="unified-ped-modal" class="modal-ped">
+              <div class="modal-content-ped" style="max-width: 95vw; height: 95vh;">
+                  <div class="flex justify-between items-center mb-4 border-b pb-2">
+                      <h3 class="text-xl font-bold text-gray-800">Vista Unificata Piano Editoriale</h3>
+                      <button onclick="closeUnifiedPedModal()" class="text-gray-500 hover:text-red-500">
+                          <i class="fas fa-times fa-lg"></i>
+                      </button>
+                  </div>
+                  <div id="unified-ped-body" class="flex-1 overflow-y-auto p-4 space-y-8 bg-gray-100 rounded"></div>
+                  <div class="mt-4 pt-4 border-t flex justify-end gap-3">
+                       <button onclick="downloadUnifiedHtml()" class="action-btn active py-2 px-6 shadow text-lg">
+                          <i class="fas fa-file-code"></i> Scarica HTML Unico
+                      </button>
+                      <button onclick="closeUnifiedPedModal()" class="action-btn">Chiudi</button>
+                  </div>
+              </div>
+          </div>
+
+          <div class="container mx-auto mb-6 flex justify-start gap-4">
               <button onclick="downloadAllPedZip()" class="action-btn yellow py-3 px-8 text-lg shadow-lg">
                   <i class="fas fa-file-archive"></i> Scarica ZIP Completo
+              </button>
+              <button onclick="openUnifiedPedModal()" class="action-btn blue-fill py-3 px-8 text-lg shadow-lg">
+                  <i class="fas fa-eye"></i> Vista Unificata & Export HTML
               </button>
           </div>
 
@@ -418,6 +439,44 @@
           <div id="ped-results-container" class="mt-8 container mx-auto space-y-4"></div>
 
           <script>
+            // --- Funzioni Vista Unificata ---
+            window.openUnifiedPedModal = function() {
+                const container = document.getElementById('unified-ped-body');
+                container.innerHTML = '';
+                
+                if (!window.globalProcessedDataPed || Object.keys(window.globalProcessedDataPed).length === 0) {
+                    showToast("Nessun dato PED disponibile.", "warning");
+                    return;
+                }
+
+                const layoutStyle = document.querySelector('input[name="layout-style"]:checked').value;
+                const useColors = document.getElementById('ped-logo-color-toggle').checked;
+                const sortedLabels = Object.keys(window.globalProcessedDataPed).sort();
+
+                sortedLabels.forEach(label => {
+                const data = window.globalProcessedDataPed[label];
+                const svgString = generatePedSVG(label, data, layoutStyle, useColors);
+                const wrapper = document.createElement('div');
+                wrapper.className = 'bg-white p-4 rounded shadow-sm border border-gray-200';
+                wrapper.innerHTML = svgString;
+                container.appendChild(wrapper);
+            });
+
+                document.getElementById('unified-ped-modal').classList.add('active');
+            }
+
+            window.closeUnifiedPedModal = function() {
+                document.getElementById('unified-ped-modal').classList.remove('active');
+            }
+
+            window.downloadUnifiedHtml = function() {
+                const content = document.getElementById('unified-ped-body').innerHTML;
+                const dateStr = new Date().toLocaleDateString('it-IT').replace(/\//g, '-');
+                const htmlTemplate = `<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Report PED Unificato</title><style>body{font-family:"Segoe UI",sans-serif;background:#f0f2f5;padding:20px}.ped-card{background:white;margin-bottom:30px;padding:20px;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.05)}h4{color:#666;font-size:0.9em;text-transform:uppercase;margin-bottom:10px;font-weight:800;border-bottom:1px solid #eee;padding-bottom:10px}svg{width:100%;height:auto;display:block}</style></head><body><h1 style="text-align:center;color:#00529F;margin-bottom:40px">Report Piano Editoriale - ${dateStr}</h1>${content.replace(/bg-white p-4 rounded shadow-sm border border-gray-200/g,'ped-card')}</body></html>`;
+                const blob = new Blob([htmlTemplate], {type: 'text/html'});
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `PED_Unificato_${dateStr}.html`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            }
+
             // Sovrascrittura delle funzioni per usare la nuova logica V2
             window.refreshPedViewV2 = function() {
                 if (!displayData || displayData.length === 0) {
@@ -1599,25 +1658,11 @@
             
             // Header Card
             const headerHtml = `
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                    <span style="font-weight:800; color:#aaa; font-size:0.9rem; letter-spacing:1px; text-transform:uppercase;">${label}</span>
+                <div style="display:flex; justify-content:flex-end; align-items:center; margin-bottom:0.5rem;">
                     <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
                         <input type="checkbox" class="ppt-checkbox" onchange="this.closest('.card-ped').classList.toggle('is-completed', this.checked)">
                         <span style="font-size:0.85rem; font-weight:600; color:#666;">Inserito nel PPT</span>
                     </label>
-                </div>`;
-            
-            const svgContainer = document.createElement('div');
-            svgContainer.className = 'svg-container-ped';
-            svgContainer.id = `ped-svg-${label.replace(/[^a-z0-9]/gi, '_')}`;
-            svgContainer.innerHTML = svgString;
-
-            // Escape per evitare errori JS con apostrofi nel nome label
-            const safeLabel = label.replace(/'/g, "\\'");
-            const actionsHtml = `
-                <div style="display:flex; justify-content:center; gap:10px; margin-top:1.5rem;">
-                    <button class="action-btn" onclick="openEditModalPed('${safeLabel}')"><i class="fas fa-sort"></i> Modifica & Ordina</button>
-                    <button class="action-btn yellow" onclick="downloadSinglePed('${safeLabel}')"><i class="fas fa-download"></i> Scarica SVG</button>
                 </div>`;
 
             card.innerHTML = headerHtml;
@@ -1714,7 +1759,6 @@
 
         if (layoutStyle === 'senza-loghi') {
             const titleY = curY + 20;
-            // Modifica: label.toUpperCase() per maiuscolo forzato
             svgHtml += `<text x="${padX}" y="${titleY}" font-size="${fontSize+4}" font-weight="700" fill="${blue}">${escapeXML(label.toUpperCase())}</text>`;
             
             let cx = padX + argW;
@@ -1729,7 +1773,6 @@
         } else {
             const tblHeadH = fontSize + 20;
             
-            // Modifica: label.toUpperCase() per maiuscolo forzato
             svgHtml += `<text x="${padX}" y="${curY+20}" font-size="${fontSize+4}" font-weight="700" fill="${blue}">${escapeXML(label.toUpperCase())}</text>`;
             svgHtml += `<line x1="${padX}" y1="${curY+32}" x2="${padX+500}" y2="${curY+32}" stroke="${blue}" stroke-width="1.5"/>`;
             curY += headerH;
