@@ -1770,6 +1770,19 @@
                     };
                     r.readAsText(f);
                 });
+
+                // LISTENER PER RESET LOGHI SU CAMBIO TOGGLE
+                const toggleBtn = document.getElementById('ped-logo-color-toggle');
+                if(toggleBtn) {
+                    toggleBtn.addEventListener('change', () => {
+                        if(Object.keys(customPedLogos).length > 0) {
+                            customPedLogos = {};
+                            const inp = document.getElementById('ped-logos-json');
+                            if(inp) inp.value = '';
+                            showToast("Modalità cambiata: Loghi Custom rimossi. Rieffettua upload se necessario.", "info");
+                        }
+                    });
+                }
             }
         }, 500);
     })();
@@ -1808,14 +1821,16 @@
             svgHtml += `<line x1="${padX}" y1="${curY+32}" x2="${width-padX}" y2="${curY+32}" stroke="${blue}" stroke-width="1.5"/>`;
             curY += headerH;
         } else {
-            const tblHeadH = fontSize + 20;
-            
-            svgHtml += `<text x="${padX}" y="${curY+20}" font-size="${fontSize+4}" font-weight="700" fill="${blue}">${escapeXML(label.toUpperCase())}</text>`;
-            svgHtml += `<line x1="${padX}" y1="${curY+32}" x2="${padX+500}" y2="${curY+32}" stroke="${blue}" stroke-width="1.5"/>`;
-            curY += headerH;
+                const tblHeadH = fontSize + 20;
+                
+                // FIX ALLINEAMENTO: Titolo e Icone sulla STESSA RIGA.
+                // 1. Disegna sfondo header alla posizione corrente
+                svgHtml += `<rect x="${padX}" y="${curY}" width="${width-2*padX}" height="${tblHeadH}" fill="#f8f9fa"/>`;
+                
+                // 2. Disegna Titolo allineato verticalmente al centro della barra header (coordinate identiche alle icone)
+                svgHtml += `<text x="${padX+20}" y="${curY+tblHeadH/2+6}" font-size="${fontSize+4}" font-weight="700" fill="${blue}">${escapeXML(label.toUpperCase())}</text>`;
 
-            // Table Header
-            svgHtml += `<rect x="${padX}" y="${curY}" width="${width-2*padX}" height="${tblHeadH}" fill="#f8f9fa"/>`;
+                // Rimosso incremento curY intermedio: ora condividono la stessa Y base
             
             let cx = padX + argW;
             CHANNELS_ORDER_PED.forEach(ch => {
