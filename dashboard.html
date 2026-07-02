@@ -1333,8 +1333,9 @@
             sorted.slice(0, 50).forEach((r, idx) => {
                 const label = (r[cols.label] || 'Account').toUpperCase(); const arg = r[cols.arg] || 'Generale'; const date = formatDate(r[cols.data]); const copyText = r[cols.copy] || ''; const visF = formatNumber(r[cols.vis]); const intF = formatNumber(r[cols.inter]); const postLink = r[cols.link];
                 const card = document.createElement('div'); card.className = 'post-card';
-                card.innerHTML = `<div class="post-header"><div class="post-channel-icon">${getChannelIcon(channelName)}</div><div class="post-meta"><div class="post-label">${label}</div><div class="post-date">${date}</div></div></div><div class="post-body"><span class="post-topic">${arg} <button class="copy-btn" style="color:var(--primary); margin-left:6px; font-size:1em;" onclick="event.stopPropagation(); navigator.clipboard.writeText('${arg.replace(/'/g, "\\'")}').then(()=>showToast('Argomento Copiato!','success'))" title="Copia argomento"><i class="far fa-copy"></i></button></span><div class="post-text">${copyText}</div></div><div class="post-footer"><div class="post-metrics"><div class="metric-item views"><i class="far fa-eye"></i> ${visF}</div><div class="metric-item likes"><i class="far fa-thumbs-up"></i> ${intF}</div></div><div class="post-actions-right">${postLink ? `<a href="${postLink}" target="_blank" class="post-link-btn" style="text-decoration:none; margin-right:8px;" title="Vai al post"><i class="fas fa-external-link-alt"></i></a>` : ''}<button class="action-btn blue-fill" onclick="openPostGraphModal(${idx})"><i class="fas fa-image"></i> Crea Grafica</button></div></div>`; gridDiv.appendChild(card);
-            });
+            const escapedArg = (arg || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            card.innerHTML = `<div class="post-header"><div class="post-channel-icon">${getChannelIcon(channelName)}</div><div class="post-meta"><div class="post-label">${label}</div><div class="post-date">${date}</div></div></div><div class="post-body"><span class="post-topic">${arg} <button class="copy-btn" style="color:var(--primary); margin-left:6px; font-size:1em;" data-arg="${escapedArg}" onclick="event.stopPropagation(); navigator.clipboard.writeText(this.getAttribute('data-arg')).then(()=>showToast('Argomento Copiato!','success'))" title="Copia argomento"><i class="far fa-copy"></i></button></span><div class="post-text">${copyText}</div></div><div class="post-footer"><div class="post-metrics"><div class="metric-item views"><i class="far fa-eye"></i> ${visF}</div><div class="metric-item likes"><i class="far fa-thumbs-up"></i> ${intF}</div></div><div class="post-actions-right">${postLink ? `<a href="${postLink}" target="_blank" class="post-link-btn" style="text-decoration:none; margin-right:8px;" title="Vai al post"><i class="fas fa-external-link-alt"></i></a>` : ''}<button class="action-btn blue-fill" onclick="openPostGraphModal(${idx})"><i class="fas fa-image"></i> Crea Grafica</button></div></div>`; gridDiv.appendChild(card);
+        });
         };
         btnView.onclick = () => { btnView.classList.add('active'); btnInt.classList.remove('active'); render('views'); }; btnInt.onclick = () => { btnInt.classList.add('active'); btnView.classList.remove('active'); render('inter'); }; render('views');
     }
@@ -1410,10 +1411,41 @@
         if(tgt2) tgt2.innerHTML = badgeSvg;
     }
     function generatePostSvgString(d) {
-        const visualizzazioni = formatNumberFull(d.views); const interazioni = formatNumberFull(d.inter); const words = d.copy.split(' '); const lines = []; let currentLine = ''; const maxCharsPerLine = 62; const maxLines = 3;
-        for (let i = 0; i < words.length; i++) { const word = words[i]; const testLine = currentLine ? currentLine + ' ' + word : word; if (testLine.length <= maxCharsPerLine) { currentLine = testLine; } else { lines.push(currentLine); currentLine = word; } if (lines.length === maxLines - 1 && i < words.length - 1) { let remainingWords = words.slice(i + 1).join(' '); let lastLineWithEllipsis = currentLine; const ellipsis = ' (...)'; while ((lastLineWithEllipsis + ' ' + remainingWords).length > maxCharsPerLine && remainingWords.includes(' ')) { const lastSpaceIndex = remainingWords.lastIndexOf(' '); if (lastSpaceIndex === -1) break; remainingWords = remainingWords.substring(0, lastSpaceIndex); } lastLineWithEllipsis = (lastLineWithEllipsis ? lastLineWithEllipsis + ' ' : '') + remainingWords; while (lastLineWithEllipsis.length + ellipsis.length > maxCharsPerLine && lastLineWithEllipsis.includes(' ')) { const lastSpaceIndex = lastLineWithEllipsis.lastIndexOf(' '); lastLineWithEllipsis = lastLineWithEllipsis.substring(0, lastSpaceIndex); } lines.push(lastLineWithEllipsis + ellipsis); currentLine = ''; break; } }
-        if (currentLine && lines.length < maxLines) lines.push(currentLine);
-        const copyTSpan = lines.map((line, index) => `<tspan x="30" dy="${index === 0 ? 0 : 30}">${line}</tspan>`).join('');
+        const visualizzazioni = formatNumberFull(d.views); const interazioni = formatNumberFull(d.inter); 
+        // Rimuove spazi invisibili (ZWS, BOM), controlli, pattern Braille (IG) e sterilizza i Carriage Return (\r)
+        const cleanCopy = d.copy.replace(/[\u200B-\u200F\u2028-\u202E\u2060-\u206F\uFEFF\u2800\r]/g, '');
+        const paragraphs = cleanCopy.split('\n');
+        const lines = []; const maxCharsPerLine = 62; const maxLines = 3;
+        
+        for (let p of paragraphs) {
+            if (lines.length >= maxLines) break;
+            if (p.trim() === '') { lines.push(''); continue; }
+            const words = p.split(' '); let currentLine = '';
+            for (let i = 0; i < words.length; i++) {
+                const word = words[i]; const testLine = currentLine ? currentLine + ' ' + word : word;
+                if (testLine.length <= maxCharsPerLine) { currentLine = testLine; } 
+                else { 
+                    lines.push(currentLine); currentLine = word; 
+                    if (lines.length === maxLines - 1 && i < words.length - 1) {
+                        let remainingWords = words.slice(i + 1).join(' ');
+                        let lastLineWithEllipsis = currentLine; const ellipsis = ' (...)';
+                        while ((lastLineWithEllipsis + ' ' + remainingWords).length > maxCharsPerLine && remainingWords.includes(' ')) {
+                            const lastSpaceIndex = remainingWords.lastIndexOf(' '); if (lastSpaceIndex === -1) break;
+                            remainingWords = remainingWords.substring(0, lastSpaceIndex);
+                        }
+                        lastLineWithEllipsis = (lastLineWithEllipsis ? lastLineWithEllipsis + ' ' : '') + remainingWords;
+                        while (lastLineWithEllipsis.length + ellipsis.length > maxCharsPerLine && lastLineWithEllipsis.includes(' ')) {
+                            const lastSpaceIndex = lastLineWithEllipsis.lastIndexOf(' ');
+                            lastLineWithEllipsis = lastLineWithEllipsis.substring(0, lastSpaceIndex);
+                        }
+                        lines.push(lastLineWithEllipsis + ellipsis); currentLine = ''; break;
+                    }
+                }
+            }
+            if (currentLine && lines.length < maxLines) lines.push(currentLine);
+        }
+        // Inserisce uno spazio per le righe vuote per evitare bug di render in alcuni visualizzatori
+        const copyTSpan = lines.map((line, index) => `<tspan x="30" dy="${index === 0 ? 0 : 30}">${line || ' '}</tspan>`).join('');
         return `<svg width="868" height="441" viewBox="0 0 868 441" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="868" height="77" fill="#E1E9F6"/><text x="434" y="55" font-family="Arial, sans-serif" font-size="40" fill="#0A4BB8" text-anchor="middle" alignment-baseline="middle">${d.label}</text><text x="30" y="125" font-family="Arial, sans-serif" font-size="30" font-weight="bold" fill="#0A4BB8">${d.argomento}</text><text x="130" y="226" font-family="Arial, sans-serif" font-size="30" fill="#666666">Pubblicato il ${d.data}</text><text x="30" y="290" font-family="Arial, sans-serif" font-size="30" fill="#666666">${copyTSpan}</text><text x="30" y="415" font-family="Arial, sans-serif" font-size="32" fill="#0A4BB8" font-weight="bold">Visualizzazioni:</text><text x="270" y="415" font-family="Arial, sans-serif" font-size="32" fill="#666666">${visualizzazioni}</text><text x="410" y="415" font-family="Arial, sans-serif" font-size="32" fill="#0A4BB8" font-weight="bold">Interazioni:</text><text x="590" y="415" font-family="Arial, sans-serif" font-size="32" fill="#666666">${interazioni}</text></svg>`;
     }
     function generateTopicBadgeSvg(text) {
