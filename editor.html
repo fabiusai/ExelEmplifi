@@ -90,6 +90,21 @@
     
     .institutional-check { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: #64748b; background: #f8fafc; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0; }
     
+    .label-group.open .label-body { max-height: none; }
+    .argument-text { min-width: 0; }
+    .move-button { flex-shrink: 0; }
+    .move-dialog { width: min(480px, calc(100vw - 40px)); box-sizing: border-box; border: 1px solid var(--border-color); border-radius: 12px; padding: 24px; color: var(--text); box-shadow: 0 20px 60px #0003; }
+    .move-dialog::backdrop { background: #10243b88; }
+    .move-dialog h2 { margin: 0; color: var(--primary); font-size: 1.2rem; }
+    .move-dialog p { overflow-wrap: anywhere; }
+    .move-dialog input { box-sizing: border-box; }
+    .destination-list { display: flex; flex-direction: column; gap: 6px; max-height: 40vh; overflow-y: auto; margin-top: 14px; }
+    .destination-list button { text-align: left; justify-content: space-between; overflow-wrap: anywhere; }
+    .move-notice { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 150; width: min(600px, calc(100vw - 32px)); box-sizing: border-box; padding: 12px 16px; border: 1px solid #b6d4ef; border-radius: 10px; background: #eef7ff; box-shadow: var(--shadow); display: flex; gap: 12px; align-items: center; }
+    .move-notice span { flex: 1; overflow-wrap: anywhere; }
+    button:focus-visible, input:focus-visible { outline: 3px solid #4b9fe9; outline-offset: 2px; }
+    @media (max-width: 600px) { .argument-item { flex-wrap: wrap; gap: 8px; } .argument-text { flex: 1; width: 55%; } .move-button { margin-left: auto; } }
+
     /* Utilities */
     .hidden { display: none !important; }
     .text-center { text-align: center; }
@@ -177,7 +192,7 @@
 
         <div class="bg-blue-50 p-3 rounded mb-4 text-sm text-gray-600 flex items-center gap-2 border border-blue-100">
             <i class="fas fa-info-circle text-blue-600"></i>
-            <span>Trascina gli argomenti tra le label. Usa "Salva e Riorganizza" per consolidare le modifiche (rinomine/spostamenti) prima di esportare.</span>
+            <span>Usa “Sposta” accanto a un argomento e cerca la categoria di destinazione, senza trascinare. Usa "Salva e Riorganizza" per consolidare le modifiche (rinomine/spostamenti) prima di esportare.</span>
         </div>
 
         <div id="editor-container" class="editor-wrapper"></div>
@@ -195,6 +210,19 @@
     </div>
 
   </div>
+
+  <dialog id="move-dialog" class="move-dialog" aria-labelledby="move-title" aria-describedby="move-description">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+      <h2 id="move-title">Sposta argomento</h2>
+      <button type="button" id="close-move" class="action-btn" aria-label="Chiudi">✕</button>
+    </div>
+    <p id="move-description"></p>
+    <label for="destination-search">Cerca la categoria di destinazione</label>
+    <input type="text" id="destination-search" placeholder="Nome della categoria…" autocomplete="off">
+    <div id="destination-list" class="destination-list"></div>
+    <p id="move-error" role="alert" style="color:#b42318"></p>
+  </dialog>
+  <div id="move-notice" class="move-notice hidden"><span role="status" aria-live="polite"></span><button type="button" id="undo-move" class="action-btn">Annulla</button><button type="button" id="close-notice" class="action-btn" aria-label="Chiudi notifica">✕</button></div>
 
   <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -216,6 +244,87 @@
         const editorContainer = document.getElementById('editor-container');
         const exportButton = document.getElementById('export-button');
         const uploadText = document.querySelector('.upload-text');
+
+        const moveDialog = document.getElementById('move-dialog');
+        const destinationSearch = document.getElementById('destination-search');
+        const destinationList = document.getElementById('destination-list');
+        const moveNotice = document.getElementById('move-notice');
+        let movingItem = null;
+        let moveTrigger = null;
+        let undoMove = null;
+
+        function clearMoveNotice() {
+            undoMove = null;
+            moveNotice.classList.add('hidden');
+        }
+        function openMoveDialog(item, trigger) {
+            movingItem = item;
+            moveTrigger = trigger;
+            const category = item.closest('.label-group').querySelector('.label-title-text').textContent;
+            document.getElementById('move-description').textContent = `“${item.querySelector('.argument-text').value}” · Categoria attuale: ${category}`;
+            destinationSearch.value = '';
+            document.getElementById('move-error').textContent = '';
+            renderDestinations();
+            moveDialog.showModal();
+            destinationSearch.focus();
+        }
+        function renderDestinations() {
+            destinationList.replaceChildren();
+            const source = movingItem.closest('.label-group');
+            const query = destinationSearch.value.trim().toLocaleLowerCase('it');
+            const groups = Array.from(editorContainer.querySelectorAll('.label-group'))
+                .filter(group => group !== source)
+                .sort((a,b) => a.querySelector('.label-title-text').textContent.localeCompare(b.querySelector('.label-title-text').textContent, 'it'));
+            groups.forEach(group => {
+                const name = group.querySelector('.label-title-text').textContent;
+                if (!name.toLocaleLowerCase('it').includes(query)) return;
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'action-btn';
+                button.textContent = name;
+                button.addEventListener('click', () => {
+                    const item = movingItem;
+                    const list = group.querySelector('.argument-list');
+                    const text = item.querySelector('.argument-text').value.trim().toLocaleLowerCase('it');
+                    const duplicate = Array.from(list.children).some(row => row.querySelector('.argument-text').value.trim().toLocaleLowerCase('it') === text);
+                    if (duplicate) {
+                        document.getElementById('move-error').textContent = 'Questa categoria contiene già un argomento con lo stesso nome. Scegli un’altra categoria oppure rinomina l’argomento.';
+                        return;
+                    }
+                    const previousList = item.parentElement;
+                    const next = item.nextSibling;
+                    list.appendChild(item);
+                    updateCounts();
+                    undoMove = { item, previousList, next };
+                    moveNotice.querySelector('span').textContent = `Argomento spostato in “${name}”.`;
+                    moveNotice.classList.remove('hidden');
+                    moveDialog.close();
+                });
+                destinationList.appendChild(button);
+            });
+            if (!destinationList.children.length) {
+                const empty = document.createElement('p');
+                empty.textContent = groups.length ? 'Nessuna categoria trovata.' : 'Crea un’altra categoria con “Nuova Label” prima di spostare l’argomento.';
+                destinationList.appendChild(empty);
+            }
+        }
+        destinationSearch.addEventListener('input', renderDestinations);
+        document.getElementById('close-move').addEventListener('click', () => moveDialog.close());
+        moveDialog.addEventListener('close', () => {
+            if (moveTrigger && moveTrigger.isConnected && moveTrigger.closest('.label-group').classList.contains('open')) moveTrigger.focus({ preventScroll: true });
+            else document.getElementById('undo-move').focus({ preventScroll: true });
+            movingItem = null;
+        });
+        document.getElementById('close-notice').addEventListener('click', clearMoveNotice);
+        document.getElementById('undo-move').addEventListener('click', () => {
+            if (!undoMove) return;
+            const {item, previousList, next} = undoMove;
+            previousList.insertBefore(item, next && next.parentElement === previousList ? next : null);
+            previousList.closest('.label-group').classList.add('open');
+            updateCounts();
+            clearMoveNotice();
+            item.querySelector('.move-button').focus({ preventScroll: true });
+        });
 
         // --- LOGICA IMPORTAZIONE DA DASHBOARD ---
         const dashSource = localStorage.getItem('social_dashboard_source');
@@ -446,6 +555,7 @@
             conflictList.innerHTML = '';
             editorSection.classList.add('hidden');
             editorContainer.innerHTML = '';
+            clearMoveNotice();
             exportButton.disabled = true;
         }
 
@@ -486,6 +596,7 @@
         function renderEditor() {
             editorSection.classList.remove('hidden');
             editorContainer.innerHTML = '';
+            clearMoveNotice();
             
             const labels = Object.keys(groupedData).sort((a, b) => {
                 if (a === 'DA CLASSIFICARE') return -1;
@@ -548,6 +659,7 @@
                 handle: '.drag-handle', 
                 ghostClass: 'sortable-ghost',
                 onEnd: function (evt) {
+                    clearMoveNotice();
                     const item = evt.item;      
                     const targetList = evt.to;  
                     
@@ -592,9 +704,13 @@
                     <input type="checkbox" id="chk-${uniqueId}" ${argData.isInstitutional ? 'checked' : ''}>
                     <label for="chk-${uniqueId}">Ist.</label>
                 </div>
+                <button type="button" class="action-btn move-button"><i class="fas fa-arrow-right" aria-hidden="true"></i> Sposta</button>
                 <div class="argument-link">
                     ${argData.link ? `<a href="${escapeHtml(String(argData.link))}" target="_blank" title="Apri link"><i class="fas fa-external-link-alt"></i></a>` : ''}
                 </div>`;
+            const moveButton = li.querySelector('.move-button');
+            moveButton.setAttribute('aria-label', `Sposta argomento: ${argument}`);
+            moveButton.addEventListener('click', () => openMoveDialog(li, moveButton));
             return li;
         }
 
