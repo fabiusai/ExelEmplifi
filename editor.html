@@ -211,6 +211,23 @@
 
   </div>
 
+  <dialog id="classify-dialog" class="move-dialog" aria-labelledby="classify-title">
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><h2 id="classify-title">Classifica post</h2><button type="button" id="close-classify" class="action-btn" aria-label="Chiudi classificazione">✕</button></div>
+    <p id="classify-post" style="max-height:120px;overflow:auto;white-space:pre-wrap"></p>
+    <label for="topic-search">Cerca un argomento esistente</label>
+    <input id="topic-search" type="text" placeholder="Cerca per argomento o label…" autocomplete="off">
+    <p style="font-size:.85rem;color:#607d8b">Scegli un argomento per assegnare automaticamente anche la sua label.</p>
+    <div id="topic-results" class="destination-list"></div>
+    <hr style="margin:20px 0;border:0;border-top:1px solid #e2e8f0">
+    <form id="new-topic-form">
+      <h3>Crea un nuovo argomento</h3>
+      <label for="new-topic">Nome argomento</label><input id="new-topic" type="text" required>
+      <label for="new-topic-label" style="display:block;margin-top:10px">Label</label><select id="new-topic-label" required></select><p style="font-size:.85rem;color:#607d8b">Se manca la label desiderata, chiudi questa finestra e usa “Nuova Label”.</p>
+      <button class="action-btn blue-fill" style="margin-top:14px" type="submit">Crea e assegna</button>
+    </form>
+    <p id="classify-error" role="alert" style="color:#b42318"></p>
+  </dialog>
+
   <dialog id="move-dialog" class="move-dialog" aria-labelledby="move-title" aria-describedby="move-description">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
       <h2 id="move-title">Sposta argomento</h2>
@@ -295,6 +312,7 @@
                     const next = item.nextSibling;
                     list.appendChild(item);
                     updateCounts();
+                    document.getElementById('undo-move').classList.remove('hidden');
                     undoMove = { item, previousList, next };
                     moveNotice.querySelector('span').textContent = `Argomento spostato in “${name}”.`;
                     moveNotice.classList.remove('hidden');
@@ -326,6 +344,85 @@
             item.querySelector('.move-button').focus({ preventScroll: true });
         });
 
+        const classifyDialog = document.getElementById('classify-dialog');
+        let classificationItem = null;
+        let topicCatalog = [];
+        function openClassification(item) {
+            classificationItem = item;
+            const row = originalData[JSON.parse(item.dataset.records)[0]];
+            document.getElementById('classify-post').textContent = [row.Data, row.Canale, row.Copy || row.Argomento].filter(Boolean).join(' · ');
+            document.getElementById('topic-search').value = '';
+            document.getElementById('new-topic').value = '';
+            document.getElementById('classify-error').textContent = '';
+            const labels = new Set();
+            const topics = new Map();
+            editorContainer.querySelectorAll('.label-group').forEach(group => {
+                const label = group.querySelector('.label-title-text').textContent.trim();
+                if (label === 'DA CLASSIFICARE') return;
+                labels.add(label);
+                group.querySelectorAll('.argument-item').forEach(item => {
+                    const argument = item.querySelector('.argument-text').value.trim();
+                    if (argument) topics.set(JSON.stringify([label, argument]), {label, argument});
+                });
+            });
+            topicCatalog = Array.from(topics.values()).sort((a,b) => a.argument.localeCompare(b.argument, 'it'));
+            const select = document.getElementById('new-topic-label');
+            select.replaceChildren(new Option('Scegli una label', ''));
+            Array.from(labels).sort((a,b) => a.localeCompare(b, 'it')).forEach(label => select.add(new Option(label, label)));
+            renderTopics();
+            classifyDialog.showModal();
+            document.getElementById('topic-search').focus();
+        }
+        function renderTopics() {
+            const query = document.getElementById('topic-search').value.trim().toLocaleLowerCase('it');
+            const results = document.getElementById('topic-results');
+            results.replaceChildren();
+            topicCatalog.filter(topic => `${topic.argument} ${topic.label}`.toLocaleLowerCase('it').includes(query)).forEach(topic => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'action-btn';
+                button.textContent = `${topic.argument} — ${topic.label}`;
+                button.addEventListener('click', () => assignClassification(topic.argument, topic.label));
+                results.appendChild(button);
+            });
+            if (!results.children.length) {
+                const empty = document.createElement('p');
+                empty.textContent = 'Nessun argomento trovato. Puoi crearne uno nuovo qui sotto.';
+                results.appendChild(empty);
+            }
+        }
+        function assignClassification(argument, label) {
+            const index = JSON.parse(classificationItem.dataset.records)[0];
+            applyEditorChanges(originalData);
+            originalData[index].Argomento = argument;
+            originalData[index].Label = label;
+            classifyDialog.close();
+            resetUI();
+            processData();
+            const group = Array.from(editorContainer.querySelectorAll('.label-group')).find(group => group.querySelector('.label-title-text').textContent === label);
+            if (group) group.classList.add('open');
+            moveNotice.querySelector('span').textContent = `Post assegnato a “${argument}” · ${label}.`;
+            document.getElementById('undo-move').classList.add('hidden');
+            moveNotice.classList.remove('hidden');
+        }
+        document.getElementById('topic-search').addEventListener('input', renderTopics);
+        document.getElementById('close-classify').addEventListener('click', () => classifyDialog.close());
+        classifyDialog.addEventListener('close', () => {
+            if (classificationItem && classificationItem.isConnected) classificationItem.querySelector('.move-button').focus({preventScroll:true});
+        });
+        document.getElementById('new-topic-form').addEventListener('submit', event => {
+            event.preventDefault();
+            const argument = document.getElementById('new-topic').value.trim();
+            const label = document.getElementById('new-topic-label').value;
+            const error = document.getElementById('classify-error');
+            if (!argument || !label) { error.textContent = 'Inserisci il nome dell’argomento e scegli una label.'; return; }
+            if (topicCatalog.some(topic => topic.argument.toLocaleLowerCase('it') === argument.toLocaleLowerCase('it'))) {
+                error.textContent = 'Questo argomento esiste già. Cercalo nell’elenco sopra per usare la sua label.';
+                return;
+            }
+            assignClassification(argument, label);
+        });
+
         // --- LOGICA IMPORTAZIONE DA DASHBOARD ---
         const dashSource = localStorage.getItem('social_dashboard_source');
         const dashData = localStorage.getItem('social_dashboard_data');
@@ -339,7 +436,7 @@
                     if(uploadText) uploadText.innerHTML = `<strong>Dati ricevuti dalla Dashboard (${parsedData.length} righe)</strong>. Elaborazione...`;
                     
                     processedData = parsedData.map(r => {
-                        let meseCalc = r['Mese'] || '';
+                        let meseCalc = r['Mese'] ?? '';
                         if (!meseCalc && r['Data']) {
                             try {
                                 const parts = String(r['Data']).split('/'); 
@@ -348,24 +445,25 @@
                         }
 
                         return {
-                            Link: r['Link'] || '', 
-                            'Dettagli Emplifi': r['Dettagli Emplifi'] || '',
+                            ...r,
+                            Link: r['Link'] ?? '', 
+                            'Dettagli Emplifi': r['Dettagli Emplifi'] ?? '',
                             Mese: meseCalc, 
-                            Data: r['Data'] || '',
-                            Canale: r['Canale'] || '',
-                            Interazioni: r['Interazioni'] || '', 
-                            Visualizzazioni: r['Visualizzazioni'] || '',
-                            'Persone raggiunte': r['Persone raggiunte'] || '', 
-                            Click: r['Click'] || '',
-                            'Like e reazioni': r['Like e reazioni'] || '', 
-                            Condivisioni: r['Condivisioni'] || '',
-                            Commenti: r['Commenti'] || '', 
-                            Campagna: r['Campagna'] || '',
+                            Data: r['Data'] ?? '',
+                            Canale: r['Canale'] ?? '',
+                            Interazioni: r['Interazioni'] ?? '', 
+                            Visualizzazioni: r['Visualizzazioni'] ?? '',
+                            'Persone raggiunte': r['Persone raggiunte'] ?? '', 
+                            Click: r['Click'] ?? '',
+                            'Like e reazioni': r['Like e reazioni'] ?? '', 
+                            Condivisioni: r['Condivisioni'] ?? '',
+                            Commenti: r['Commenti'] ?? '', 
+                            Campagna: r['Campagna'] ?? '',
                             Label: r['Label'] || 'DA CLASSIFICARE', 
                             Argomento: r['Argomento'] || 'Senza Titolo', 
-                            Copy: r['Copy'] || '',
-                            Istituzionale: r['Istituzionale'] || '',
-                            OriginalLabels: r['OriginalLabels'] || ''
+                            Copy: r['Copy'] ?? '',
+                            Istituzionale: r['Istituzionale'] ?? '',
+                            OriginalLabels: r['OriginalLabels'] ?? ''
                         };
                     });
 
@@ -425,7 +523,7 @@
 
           if (isProcessedFile) {
             processedData = data.map(r => {
-                let formattedDate = r['Data'] || '';
+                let formattedDate = r['Data'] ?? '';
                 if (typeof r['Data'] === 'number') {
                     const parsedDate = XLSX.SSF.parse_date_code(r['Data']);
                     const jsDate = new Date(parsedDate.y, parsedDate.m - 1, parsedDate.d);
@@ -433,16 +531,17 @@
                 }
 
                 return {
-                    Link: r['Link'] || '', 'Dettagli Emplifi': r['Dettagli Emplifi'] || '',
-                    Mese: r['Mese'] || '', Data: formattedDate,
-                    Canale: r['Canale'] || '',
-                    Interazioni: r['Interazioni'] || '', Visualizzazioni: r['Visualizzazioni'] || '',
-                    'Persone raggiunte': r['Persone raggiunte'] || '', Click: r['Click'] || '',
-                    'Like e reazioni': r['Like e reazioni'] || '', Condivisioni: r['Condivisioni'] || '',
-                    Commenti: r['Commenti'] || '', Campagna: r['Campagna'] || '',
-                    Label: r['Label'] || '', Argomento: r['Argomento'] || '', Copy: r['Copy'] || '',
-                    Istituzionale: r['Istituzionale'] || '',
-                    OriginalLabels: ''
+                    ...r,
+                    Link: r['Link'] ?? '', 'Dettagli Emplifi': r['Dettagli Emplifi'] ?? '',
+                    Mese: r['Mese'] ?? '', Data: formattedDate,
+                    Canale: r['Canale'] ?? '',
+                    Interazioni: r['Interazioni'] ?? '', Visualizzazioni: r['Visualizzazioni'] ?? '',
+                    'Persone raggiunte': r['Persone raggiunte'] ?? '', Click: r['Click'] ?? '',
+                    'Like e reazioni': r['Like e reazioni'] ?? '', Condivisioni: r['Condivisioni'] ?? '',
+                    Commenti: r['Commenti'] ?? '', Campagna: r['Campagna'] ?? '',
+                    Label: r['Label'] ?? '', Argomento: r['Argomento'] ?? '', Copy: r['Copy'] ?? '',
+                    Istituzionale: r['Istituzionale'] ?? '',
+                    OriginalLabels: r['OriginalLabels'] ?? ''
                 };
             });
           } else {
@@ -466,28 +565,29 @@
                     formattedDate = dateCell;
                 }
                 
-                const allLabels = (r['Labels'] || '').split(';').map(s => s.trim());
+                const allLabels = (r['Labels'] ?? '').split(';').map(s => s.trim());
                 const labelsForProcessing = allLabels.filter(l => l !== '#IST');
                 const labelValue = labelsForProcessing.filter(l => l.startsWith('#')).map(l => ({'#PES':'Prodotti e servizi', '#TER':'Territorio', '#ISR':'Investor e stakeholder relations', '#FIL':'Filatelia', '#EB':'Employer branding', '#P160':'Poste 160', '#NED':'News editoriali', '#CET':'CSR e trasparenza', '#DEI':'Digital e Innovazione', '#ST':'Storici', '#RIC':'Ricorrenze', '#MICO':'Poste Logistics Partner MiCo 2026'}[l] || l))[0] || '';
                 const argomentoValue = labelsForProcessing.filter(l => !l.startsWith('#'))[0] || '';
-                const hasKeywords = /lasco|del fante|rovere/i.test((r['Content'] || '').toLowerCase());
+                const hasKeywords = /lasco|del fante|rovere/i.test((r['Content'] ?? '').toLowerCase());
                 const isIstituzionalePreliminary = (hasKeywords || allLabels.includes('#IST')) ? 1 : '';
 
-                const platformRaw = r['Platform'] || '';
+                const platformRaw = r['Platform'] ?? '';
                 const platform = platformRaw ? platformRaw.charAt(0).toUpperCase() + platformRaw.slice(1).toLowerCase() : '';
-                const authorName = (r['Author name'] || '').trim();
+                const authorName = (r['Author name'] ?? '').trim();
                 const canaleValue = (authorName && authorName !== 'Poste Italiane') ? `${platform} ${authorName}` : platform;
                 
                 return {
-                Link: r['View on platform'] || r['Content type'] || '', 'Dettagli Emplifi': r['Post detail URL'] || '',
+                ...r,
+                Link: r['View on platform'] || r['Content type'] || '', 'Dettagli Emplifi': r['Post detail URL'] ?? '',
                 Mese: meseDelReport, Data: formattedDate,
                 Canale: canaleValue,
-                Interazioni: r['Total interactions'] || r['Taps forward'] || '', Visualizzazioni: r['Total impressions'] || r['Video view count'] || '',
+                Interazioni: r['Total interactions'] ?? r['Taps forward'] ?? '', Visualizzazioni: r['Total impressions'] ?? r['Video view count'] ?? '',
                 'Persone raggiunte': Number(r['Total reach']) > 0 ? r['Total reach'] : '', Click: Number(r['Post clicks']) > 0 ? r['Post clicks'] : '',
                 'Like e reazioni': Number(r['Total reactions']) > 0 ? r['Total reactions'] : '', Condivisioni: Number(r['Total shares']) > 0 ? r['Total shares'] : '',
                 Commenti: Number(r['Total comments']) > 0 ? r['Total comments'] : '', Campagna: Number(r['Paid impression']) > 0 ? 'Campagna' : 'Editoriale',
-                Label: labelValue, Argomento: argomentoValue, Copy: r['Content'] || '', Istituzionale: isIstituzionalePreliminary,
-                OriginalLabels: r['Labels'] || ''
+                Label: labelValue, Argomento: argomentoValue, Copy: r['Content'] ?? '', Istituzionale: isIstituzionalePreliminary,
+                OriginalLabels: r['Labels'] ?? ''
                 };
             });
           }
@@ -504,7 +604,7 @@
         }
 
         function processData() {
-            groupedData = {};
+            groupedData = Object.create(null);
             const argumentToLabelMap = new Map();
             const conflicts = new Map();
             
@@ -519,6 +619,7 @@
                 let label = getTrimmedString(row['Label']);
                 if (!label) { label = "DA CLASSIFICARE"; row['Label'] = label; }
 
+                if (label === 'DA CLASSIFICARE') return;
                 if (argumentToLabelMap.has(argument) && argumentToLabelMap.get(argument) !== label) {
                     if (!conflicts.has(argument)) {
                         conflicts.set(argument, new Set([argumentToLabelMap.get(argument)]));
@@ -534,18 +635,21 @@
                 return;
             }
             
-            originalData.forEach(row => {
+            originalData.forEach((row, recordIndex) => {
                 const label = getTrimmedString(row['Label']);
                 const argument = getTrimmedString(row['Argomento']);
                 if (!label || !argument) return;
                 const isInstitutional = row['Istituzionale'] == 1;
                 const link = row['Link'];
-                if (!groupedData[label]) groupedData[label] = {};
-                if (!groupedData[label][argument]) {
-                    groupedData[label][argument] = { isInstitutional: false, link: null };
+                if (!groupedData[label]) groupedData[label] = Object.create(null);
+                const title = argument;
+                const key = label === 'DA CLASSIFICARE' ? String(recordIndex) : argument;
+                if (!groupedData[label][key]) {
+                    groupedData[label][key] = { title, records: [], isInstitutional: false, link: null };
                 }
-                if (isInstitutional) groupedData[label][argument].isInstitutional = true;
-                if (!groupedData[label][argument].link && link) groupedData[label][argument].link = link;
+                groupedData[label][key].records.push(recordIndex);
+                if (isInstitutional) groupedData[label][key].isInstitutional = true;
+                if (!groupedData[label][key].link && link) groupedData[label][key].link = link;
             });
             renderEditor();
         }
@@ -588,7 +692,7 @@
         }
         
         function escapeHtml(str) {
-            return String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         }
 
         // --- RENDER EDITOR ---
@@ -649,7 +753,7 @@
             const argumentsInLabel = Object.keys(itemsData).sort();
             argumentsInLabel.forEach(argument => {
                 const argData = itemsData[argument];
-                const argumentItem = createArgumentItemDOM(argument, argData, labelName);
+                const argumentItem = createArgumentItemDOM(argData.title, argData, labelName);
                 listContainer.appendChild(argumentItem);
             });
 
@@ -671,6 +775,7 @@
                         const duplicate = siblings.find(el => el !== item && el.querySelector('.argument-text').value.trim().toLowerCase() === movedText);
                         
                         if (duplicate) {
+                            duplicate.dataset.records = JSON.stringify([...JSON.parse(duplicate.dataset.records), ...JSON.parse(item.dataset.records)]);
                             item.remove();
                             duplicate.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                             duplicate.style.transition = 'background-color 0.4s';
@@ -692,6 +797,8 @@
             li.className = 'argument-item';
             
             // Salviamo SIA l'argomento CHE la label originale per identificarlo univocamente
+            li.dataset.records = JSON.stringify(argData.records);
+            li.dataset.originalInstitutional = String(argData.isInstitutional);
             li.dataset.originalArgument = argument; 
             li.dataset.originalLabel = labelName; 
             
@@ -708,6 +815,22 @@
                 <div class="argument-link">
                     ${argData.link ? `<a href="${escapeHtml(String(argData.link))}" target="_blank" title="Apri link"><i class="fas fa-external-link-alt"></i></a>` : ''}
                 </div>`;
+            if (labelName === 'DA CLASSIFICARE') {
+                li.style.borderColor = '#e74c3c';
+                li.style.backgroundColor = '#fff5f5';
+                const row = originalData[argData.records[0]];
+                const details = document.createElement('span');
+                details.style.cssText = 'flex-basis:100%;font-size:.85rem;color:#64748b;white-space:pre-wrap;overflow-wrap:anywhere';
+                details.textContent = [row.Data, row.Canale, row.Copy].filter(Boolean).join(' · ');
+                li.style.flexWrap = 'wrap';
+                li.appendChild(details);
+                li.querySelector('.drag-handle').remove();
+                li.querySelector('.argument-text').readOnly = true;
+                const classify = li.querySelector('.move-button');
+                classify.textContent = 'Classifica';
+                classify.addEventListener('click', () => openClassification(li));
+                return li;
+            }
             const moveButton = li.querySelector('.move-button');
             moveButton.setAttribute('aria-label', `Sposta argomento: ${argument}`);
             moveButton.addEventListener('click', () => openMoveDialog(li, moveButton));
@@ -772,6 +895,24 @@
             }
         }
         
+        function applyEditorChanges(data) {
+            let changes = 0;
+            editorContainer.querySelectorAll('.argument-item').forEach(item => {
+                const label = item.closest('.label-group').querySelector('.label-title-text').textContent.trim();
+                const argument = item.querySelector('.argument-text').value.trim();
+                const checked = item.querySelector('.institutional-check input').checked;
+                const changedFlag = String(checked) !== item.dataset.originalInstitutional;
+                JSON.parse(item.dataset.records).forEach(index => {
+                    const row = data[index];
+                    if (row.Label !== label || row.Argomento !== argument || changedFlag) changes++;
+                    row.Label = label;
+                    row.Argomento = argument;
+                    if (changedFlag) row.Istituzionale = checked ? 1 : '';
+                });
+            });
+            return changes;
+        }
+
         // --- FUNZIONE SAVE AND REFRESH AGGIORNATA ---
         window.saveAndRefresh = function() {
             const btn = document.querySelector('button[onclick="saveAndRefresh()"]');
@@ -781,43 +922,7 @@
 
             setTimeout(() => {
                 try {
-                    // 1. Mappa lo stato usando chiave composta LABEL|ARGOMENTO
-                    const uiStateMap = new Map();
-                    document.querySelectorAll('.label-group').forEach(labelGroup => {
-                        const newLabel = labelGroup.querySelector('.label-title-text').textContent.trim();
-                        labelGroup.querySelectorAll('.argument-item').forEach(item => {
-                            const originalArg = item.dataset.originalArgument; 
-                            const originalLbl = item.dataset.originalLabel; // Recupera Label Originale
-                            
-                            const newArgumentText = item.querySelector('.argument-text').value.trim();
-                            const newIsInstitutional = item.querySelector('.institutional-check input').checked;
-                            
-                            // CHIAVE COMPOSTA
-                            const uniqueKey = `${originalLbl}|${originalArg}`;
-                            uiStateMap.set(uniqueKey, { newLabel, newArgumentText, newIsInstitutional });
-                        });
-                    });
-
-                    // 2. Aggiorna i dati originali
-                    let changesCount = 0;
-                    originalData.forEach(row => {
-                        // Ricostruisci chiave dalla riga
-                        const currentKey = `${getTrimmedString(row['Label'])}|${getTrimmedString(row['Argomento'])}`;
-                        
-                        if (uiStateMap.has(currentKey)) {
-                            const updates = uiStateMap.get(currentKey);
-                            
-                            if (row['Label'] !== updates.newLabel || 
-                                row['Argomento'] !== updates.newArgumentText || 
-                                (row['Istituzionale'] == 1) !== updates.newIsInstitutional) {
-                                
-                                row['Label'] = updates.newLabel;
-                                row['Argomento'] = updates.newArgumentText;
-                                row['Istituzionale'] = updates.newIsInstitutional ? 1 : '';
-                                changesCount++;
-                            }
-                        }
-                    });
+                    const changesCount = applyEditorChanges(originalData);
 
                     // 3. Ricalcola
                     processData(); 
@@ -847,29 +952,7 @@
                     let updatedData = JSON.parse(JSON.stringify(originalData));
                     
                     // --- LOGICA EXPORT AGGIORNATA CON CHIAVE COMPOSTA ---
-                    const uiStateMap = new Map();
-                    document.querySelectorAll('.label-group').forEach(labelGroup => {
-                        const newLabel = labelGroup.querySelector('.label-title-text').textContent.trim();
-                        labelGroup.querySelectorAll('.argument-item').forEach(item => {
-                            const originalArg = item.dataset.originalArgument;
-                            const originalLbl = item.dataset.originalLabel; // NUOVO
-                            const newArgumentText = item.querySelector('.argument-text').value;
-                            const newIsInstitutional = item.querySelector('.institutional-check input').checked;
-                            
-                            const uniqueKey = `${originalLbl}|${originalArg}`;
-                            uiStateMap.set(uniqueKey, { newLabel, newArgumentText, newIsInstitutional });
-                        });
-                    });
-                    
-                    updatedData.forEach(row => {
-                        const currentKey = `${getTrimmedString(row['Label'])}|${getTrimmedString(row['Argomento'])}`;
-                        if (uiStateMap.has(currentKey)) {
-                            const updates = uiStateMap.get(currentKey);
-                            row['Label'] = updates.newLabel;
-                            row['Argomento'] = updates.newArgumentText;
-                            row['Istituzionale'] = updates.newIsInstitutional ? 1 : '';
-                        }
-                    });
+                    applyEditorChanges(updatedData);
                     
                     updatedData.sort((a, b) => {
                         const dateA = convertToDate(a.Data);
@@ -999,29 +1082,7 @@
                 try {
                     // --- LOGICA DASHBOARD AGGIORNATA CON CHIAVE COMPOSTA ---
                     let updatedData = JSON.parse(JSON.stringify(originalData));
-                    const uiStateMap = new Map();
-                    document.querySelectorAll('.label-group').forEach(labelGroup => {
-                        const newLabel = labelGroup.querySelector('.label-title-text').textContent.trim();
-                        labelGroup.querySelectorAll('.argument-item').forEach(item => {
-                            const originalArg = item.dataset.originalArgument;
-                            const originalLbl = item.dataset.originalLabel; // NUOVO
-                            const newArgumentText = item.querySelector('.argument-text').value;
-                            const newIsInstitutional = item.querySelector('.institutional-check input').checked;
-                            
-                            const uniqueKey = `${originalLbl}|${originalArg}`;
-                            uiStateMap.set(uniqueKey, { newLabel, newArgumentText, newIsInstitutional });
-                        });
-                    });
-
-                    updatedData.forEach(row => {
-                        const currentKey = `${getTrimmedString(row['Label'])}|${getTrimmedString(row['Argomento'])}`;
-                        if (uiStateMap.has(currentKey)) {
-                            const updates = uiStateMap.get(currentKey);
-                            row['Label'] = updates.newLabel;
-                            row['Argomento'] = updates.newArgumentText;
-                            row['Istituzionale'] = updates.newIsInstitutional ? 1 : '';
-                        }
-                    });
+                    applyEditorChanges(updatedData);
 
                     const finalOutput = [];
                     const allHeaders = updatedData.length > 0 ? Object.keys(updatedData[0]) : [];
