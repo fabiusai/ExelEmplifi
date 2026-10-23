@@ -352,7 +352,8 @@
             const row = originalData[JSON.parse(item.dataset.records)[0]];
             document.getElementById('classify-post').textContent = [row.Data, row.Canale, row.Copy || row.Argomento].filter(Boolean).join(' · ');
             document.getElementById('topic-search').value = '';
-            document.getElementById('new-topic').value = '';
+            const draftArgument = item.querySelector('.argument-text').value.trim();
+            document.getElementById('new-topic').value = draftArgument === 'Senza Titolo' ? '' : draftArgument;
             document.getElementById('classify-error').textContent = '';
             const labels = new Set();
             const topics = new Map();
@@ -825,7 +826,6 @@
                 li.style.flexWrap = 'wrap';
                 li.appendChild(details);
                 li.querySelector('.drag-handle').remove();
-                li.querySelector('.argument-text').readOnly = true;
                 const classify = li.querySelector('.move-button');
                 classify.textContent = 'Classifica';
                 classify.addEventListener('click', () => openClassification(li));
